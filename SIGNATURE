@@ -1,0 +1,40 @@
+This file contains message digests of all files listed in MANIFEST,
+signed via the Module::Signature module, version 0.55.
+
+To verify the content in this distribution, first make sure you have
+Module::Signature installed, then type:
+
+    % cpansign -v
+
+It will check each file's integrity, as well as the signature's
+validity.  If "==> Signature verified OK! <==" is not displayed,
+the distribution may already have been compromised, and you should
+not run its Makefile.PL or Build.PL.
+
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: RIPEMD160
+
+SHA1 ce82bde12d638e650fdcb3475227fd5d87daf92d .perlcriticrc
+SHA1 080a1d9d96f0e120a0a9784b26157b6bc93c637f Changes
+SHA1 6b8822e6cafae62bafddc2b2466b51f5433b495e INSTALL
+SHA1 8e992b4204ff5c2106c58e7e6a29e3c6bf188f57 LICENSE
+SHA1 a2e714d6554652900f568807c8461e41ec1d355f MANIFEST
+SHA1 376aeadaf110f36d603df85fa294da1539f8750a MANIFEST.SKIP
+SHA1 90d4dc8a3e6fd2f55cd7cb417d677aca2657fd40 META.yml
+SHA1 77dedd6f57cd66df5e384b8bf1f7316ebc371e31 Makefile.PL
+SHA1 0acf7b78543a69376b348a560309e5b588f9f0d7 README
+SHA1 3d63292af46d2fee546a49e0945dfbdaf3342041 pgsi.pl
+SHA1 2fe1628047ced837905f75cc9b633fa25489aa66 t/00_basic.t
+SHA1 d86e0891c1b7804ec7a59d4e45cc88ef85e30a4c t/00_signature.t
+SHA1 4eec6dc52f8ac7db05d3bf4a4d6ac1339158195e t/02_pgsi.t
+SHA1 b183c3268e9c31f9e4776e01b7a45228a057333c t/99_cleanup.t
+SHA1 23b80296d977a9f1e3bf2ee021377b2ff9577f92 t/99_perlcritic.t
+SHA1 e02007e998f8c49a66ac1fa8bc10b3e993578180 t/99_pod.t
+SHA1 efe3e416735865c401388e55f893f9d77c8c56d2 t/99_spellcheck.t
+SHA1 36152d148d511741dd7d46f9df1ddc798e2d02a6 t/99_yaml.t
+-----BEGIN PGP SIGNATURE-----
+
+iEYEAREDAAYFAklycMQACgkQvJuQZxSWSsisCACgxYO908sjf9C6iaDl0n+6ZGmt
+iY4An0/xMHXZKtaRXOyyZ4EE2xzHqaq0
+=9LJK
+-----END PGP SIGNATURE-----

@@ -1,0 +1,9 @@
+Install pgsi like any other Perl module:
+
+perl Makefile.PL
+make
+make test
+make install
+
+If you find any problems when running the above, please report them!
+
