@@ -58,8 +58,6 @@ GetOptions ( ## no critic
     )
 ) or die $USAGE;
 
-$opt{file} or die $USAGE;
-
 # Build an or-list for regex extraction of
 # the query types of interest.
 my $query_types = $opt{'query-types'}
@@ -133,8 +131,13 @@ my $extract_duration_re =
         )
     }xms;
 
-
-open my $fh, '<', $opt{file} or die qq{Could not open "$opt{file}": $!\n};
+my $fh;
+if ($opt{file}) {
+	open $fh, '<', $opt{file} or die qq{Could not open "$opt{file}": $!\n};
+}
+else {
+	$fh = \*STDIN;
+}
 
 while (my $line = <$fh>) {
 
