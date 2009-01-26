@@ -20,7 +20,7 @@ use Getopt::Long;
 use IO::Handle;
 use 5.008003;
 
-our $VERSION = '1.1.0';
+our $VERSION = '1.1.1';
 
 *STDOUT->autoflush(1);
 *STDERR->autoflush(1);
@@ -837,7 +837,12 @@ This documentation refers to version 1.1.0
 
 =head1 USAGE
 
-pgsi.pl -f pglog_slice.log [options]
+
+cat pglog_slice.log | pgsi.pl [options]
+
+ or...
+
+pgsi.pl --file pglog_slice.log [options]
 
 =over 3
 
