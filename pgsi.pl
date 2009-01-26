@@ -103,12 +103,9 @@ my $statement_re =
         (.*)
     }xms;
 
-# Create the appropriate regex to pull
-# out the actual query depending on the
-# format implied by --pg-version. Blesses
-# regex into the appropriate namespace
-# to simplify access to routines that deviate
-# between log formats.
+# Create the appropriate regex to pull out the actual query depending on the
+# format implied by --pg-version. Blesses regex into the appropriate namespace
+# to simplify access to routines that deviate between log formats.
 my $extract_query_re =
     make_extractor(
         $opt{'pg-version'},
