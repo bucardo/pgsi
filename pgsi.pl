@@ -857,8 +857,11 @@ pgsi.pl --file pglog_slice.log [options]
 =head1 DESCRIPTION
 
 System Impact (SI) is a measure of the overall load a given query imposes on a
-server. It is expressed as the ratio of a query's average duration over the its
-average interval between successive calls, then expressed as a percentage.
+server. It is expressed as a percentage of a query's average duration over the
+its average interval between successive calls. E.g., SI=80 indicates that a
+given query is active 80% of the time during the entire log interval. SI=200
+indicates the query is running twice at all times on average. Thus, the lower
+the SI, the better.
 
 The goal of SI is to identify those queries most likely to cause performance
 degradation on the database during heaviest traffic periods. Focusing
@@ -869,6 +872,11 @@ will tend to emphasize small, highly optimized queries at the expense of
 slightly less popular queries that spend much more of their time between
 successive calls in an active state. These are often smaller queries that have
 failed to be optimized and punish a system severely under heavy load.
+
+One thing SI does not do is distinguish between high-value queries represented
+by extended active states or long durations due to blocking locks. Either
+condition is worthy of attention, but determining which is to blame will
+require independent investigation.
 
 Queries are canonized with placeholders representing literals or arguments.
 Further, IN lists are canonized so that variation from query to query only
@@ -894,7 +902,7 @@ Some examples of the "same" query:
 
 =back
 
-Capitalization and whitespace changes are irrelevant.
+Differences in capitalization and whitespace are irrelevant.
 
 =head2 Log Data
 
@@ -902,6 +910,10 @@ Pass in log data on stdin:
 
     cat some_log_slice.log | pgsi.pl
     pgsi.pl < some_log_slice.log
+
+Or use the --file option:
+
+    pgsi.pl --file=some_log_slice.log
 
 Log data must comply with a specific format and must be from contiguous
 activity. The code makes the assumption that the overall interval of activity
