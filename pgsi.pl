@@ -857,9 +857,9 @@ pgsi.pl --file pglog_slice.log [options]
 =head1 DESCRIPTION
 
 System Impact (SI) is a measure of the overall load a given query imposes on a
-server. It is expressed as a percentage of a query's average duration over the
-its average interval between successive calls. E.g., SI=80 indicates that a
-given query is active 80% of the time during the entire log interval. SI=200
+server. It is expressed as a percentage of a query's average duration over its
+average interval between successive calls. E.g., SI=80 indicates that a given
+query is active 80% of the time during the entire log interval. SI=200
 indicates the query is running twice at all times on average. Thus, the lower
 the SI, the better.
 
