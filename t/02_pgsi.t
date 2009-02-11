@@ -50,7 +50,9 @@ listen_addresses = ''
 max_connections  = 5
 log_statement    = 'all'
 log_duration     = 'on'
-log_line_prefix = '%t %h %d[%p]: [%l-1] ' ## Simulate syslog entries
+log_line_prefix  = '%t %h %d[%p]: [%l-1] ' ## Simulate syslog entries
+log_destination  = 'stderr'
+redirect_stderr  = 'off'
 
 EOT
 }
@@ -112,7 +114,7 @@ $dbh->do("SELECT 999");
 $dbh->do("SELECT 888");
 $dbh->do("SELECT 777");
 
-$dbh->do("SELECT pg_sleep(1)");
+$dbh->do("SELECT pg_client_encoding()");
 
 update_log_copy();
 
@@ -130,10 +132,10 @@ $t=q{pgsi returned the expected query};
 like ($info, qr{^ SELECT \?$}ms, $t);
 
 $t=q{pgsi returned the expected query};
-like ($info, qr{^ SELECT pg_sleep\(\?\)}ms, $t);
+like ($info, qr{^ SELECT pg_client_encoding\(\)}ms, $t);
 
-$t=q{pgsi returned the expected average duration};
-if ($info =~ qr{^(\d+)\.\d+ ms<br />.1<br />}ms and $1 >= 1000) {
+$t=q{pgsi returned an average duration line};
+if ($info =~ qr{^(\d+)\.\d+ ms<br />}ms) {
 	pass ($t);
 }
 else {
