@@ -1,6 +1,5 @@
 Makefile
 blib/
-pg.log
 pgsi_test_database/
 pm_to_blib
 tmp/
