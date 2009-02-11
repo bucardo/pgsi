@@ -52,7 +52,6 @@ log_statement    = 'all'
 log_duration     = 'on'
 log_line_prefix  = '%t %h %d[%p]: [%l-1] ' ## Simulate syslog entries
 log_destination  = 'stderr'
-redirect_stderr  = 'off'
 
 EOT
 }
