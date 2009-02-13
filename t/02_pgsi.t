@@ -8,6 +8,7 @@ use warnings;
 use DBI;
 use Data::Dumper;
 use IO::Handle;
+use POSIX;
 *STDOUT->autoflush(1);
 *STDERR->autoflush(1);
 use Test::More tests => 6;
@@ -40,6 +41,7 @@ while (<$fh>) {
 		last;
 	}
 }
+my $fn = 'pg.%C.log';
 if (! $found) {
 	diag "Configuring postgresql.conf\n";
 	print $fh <<"EOT"
@@ -52,6 +54,8 @@ log_statement    = 'all'
 log_duration     = 'on'
 log_line_prefix  = '%t %h %d[%p]: [%l-1] ' ## Simulate syslog entries
 log_destination  = 'stderr'
+log_directory    = '.'
+log_filename     = '$fn'
 
 EOT
 }
@@ -60,7 +64,7 @@ close $fh or die qq{Could not close "$file": $!\n};
 
 my $pidfile = "$testdir/postmaster.pid";
 my $startup = 1;
-my $logfile = 'pg.log';
+my $logfile = POSIX::strftime("$testdir/$fn", localtime);
 if (-e $pidfile) {
 	open my $fh, '<', $pidfile or die qq{Could not open "$pidfile": $!\n};
 	<$fh> =~ /(\d+)/ or die qq{No PID found in file "$pidfile"\n};
