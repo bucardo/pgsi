@@ -4,3 +4,4 @@ pgsi_test_database/
 pm_to_blib
 tmp/
 pgsi-*.tar.gz
+pgsi.html
