@@ -24,7 +24,7 @@ WriteMakefile(
 	INST_LIB     => 'tmp',
     NORECURS     => 1,
     SIGN         => 1,
-    clean        => { FILES => '*~ tmp/* test.pg.log' },
+    clean        => { FILES => '*~ tmp/* test.pg.log pgsi.html' },
 );
 
 package MY;
