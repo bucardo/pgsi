@@ -5,9 +5,13 @@ Documentation is available as POD within the script:
 
  perldoc pgsi.pl
 
+More information is at the website:
+
+ http://bucardo.org/pgsi/
+
 Version: 1.1.1
 
 Contact:
- Mark Johnson, End Point Corp.
- http://endpoint.com
+ Mark Johnson, End Point Corporation
+ http://www.endpoint.com/
  mark@endpoint.com (bugs, problems, questions, suggestions)
