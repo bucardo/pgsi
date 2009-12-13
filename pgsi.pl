@@ -2,7 +2,7 @@
 
 ## Parse Postgres logs and determine the system impact
 ##
-## Usage: cat pglog_slice.log | pgsi.pl [options]
+## Usage: pgsi.pl [options] < pglog_slice.log
 ##
 ## See the POD inside this file for full documentation:
 ## perldoc pgsi.pl
@@ -835,7 +835,7 @@ This documentation refers to version 1.1.1
 =head1 USAGE
 
 
-cat pglog_slice.log | pgsi.pl [options]
+pgsi.pl [options] < pglog_slice.log 
 
  or...
 
@@ -908,8 +908,8 @@ Differences in capitalization and whitespace are irrelevant.
 
 Pass in log data on stdin:
 
-    cat some_log_slice.log | pgsi.pl
     pgsi.pl < some_log_slice.log
+    cat some_log_slice.log | pgsi.pl
 
 Or use the --file option:
 
