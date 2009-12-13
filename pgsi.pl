@@ -926,6 +926,9 @@ YYYY-MM-DDTHH24:MI:SS(-TZ:00)? server postgres[I<pid>]:
 
 This also requires that log_statement is set to 'all' and 
 that log_duration be set to 'on' in postgresql.conf.
+If you are not using syslog, you can simulate the format with the following:
+
+log_line_prefix  = '%t %h postgres[%p]: [%l-1] ' ## Simulate syslog for pgsi.
 
 =head2 Options
 
