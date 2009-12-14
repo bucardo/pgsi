@@ -511,55 +511,55 @@ sub resolve_stmt {
     return 1;
 }
 
+# Expects first arg as log entry of earliest time
+# and second arg as log entry of latest time
 sub log_interval {
-    my @args = @_;
+    my ($first_line, $second_line) = @_;
 
-    my @dates;
-
-    # Expects first arg as log entry of earliest time
-    # and second arg as log entry of latest time
-    for (@args) {
-        my ($year, $mon, $day, $hour, $min, $sec) =
-            m{
-                (\d{4})
-                -
-                (\d{1,2})
-                -
-                (\d{1,2})
-                [T ]
-                0?
-                (\d{1,2})
-                :
-                0?
-                (\d{1,2})
-                :
-                0?
-                (\d{1,2})
-            }x;
-
-        --$mon;
-
-        push (
-            @dates,
-            [
-                $sec,
-                $min,
-                $hour,
-                $day,
-                $mon,
-                $year,
-            ]
-        );
-    }
-
-    my $int_in_sec =
-        Time::Local::timelocal(@{ $dates[1] })
-        -
-        Time::Local::timelocal(@{ $dates[0] })
-    ;
-
+    my $first_timelocal = get_timelocal_from_line($first_line);
+    my $second_timelocal = get_timelocal_from_line($second_line);
+    my $interval_in_sec = $second_timelocal - $first_timelocal;
+    
     # Full log-slice interval in ms
-    return $int_in_sec * 1000;
+    return $interval_in_sec * 1000;
+}
+
+sub get_timelocal_from_line {
+    my ($line) = @_;
+    
+    my @datetime = get_date_from_line($line);
+    
+    # timelocal uses 0..11 for months instead of 1..12
+    --$datetime[1];
+    
+    my $int_in_sec =
+        Time::Local::timelocal(reverse(@datetime));
+        
+    return $int_in_sec;
+}
+
+sub get_date_from_line {
+    my ($line) = @_;
+    
+    my ($year, $mon, $day, $hour, $min, $sec) = 
+        $line =~ m{
+        (\d{4})
+        -
+        (\d{1,2})
+        -
+        (\d{1,2})
+        [T ]
+        0?
+        (\d{1,2})
+        :
+        0?
+        (\d{1,2})
+        :
+        0?
+        (\d{1,2})
+    }x;
+    
+    return ($year, $mon, $day, $hour, $min, $sec);
 }
 
 sub prettify_query {
