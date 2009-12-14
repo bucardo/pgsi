@@ -39,7 +39,7 @@ my %opt = (
     'query-types' => '',
     'pg-version'  => '',
     'offenders'   => 0,
-	'verbose'     => 0,
+    'verbose'     => 0,
 );
 
 my $USAGE = qq{Usage: $0 -f filename [options]\n};
@@ -54,7 +54,7 @@ GetOptions ( ## no critic
         'offenders=i',
         'help',
         'verbose',
-		'file=s',
+        'file=s',
     )
 ) or die $USAGE;
 
@@ -130,64 +130,64 @@ my $extract_duration_re =
 
 my $fh;
 if ($opt{file}) {
-	open $fh, '<', $opt{file} or die qq{Could not open "$opt{file}": $!\n};
+    open $fh, '<', $opt{file} or die qq{Could not open "$opt{file}": $!\n};
 }
 else {
-	$fh = \*STDIN;
+    $fh = \*STDIN;
 }
 
 while (my $line = <$fh>) {
 
-	if ($opt{verbose} >= 2) {
-		chomp $line;
-		warn "Checking line ($line)\n";
-	}
+    if ($opt{verbose} >= 2) {
+        chomp $line;
+        warn "Checking line ($line)\n";
+    }
 
     # Lines that don't match the basic format are ignored.
-	if ($line !~ $statement_re) {
-		chomp $line;
-		$opt{verbose} and warn "Line $. did not match: $line\n";
-		next;
-	}
+    if ($line !~ $statement_re) {
+        chomp $line;
+        $opt{verbose} and warn "Line $. did not match: $line\n";
+        next;
+    }
 
-	my ($st_id, $pid, $st_seq, $st_frag) = ($1, $2, $3, $4);
+    my ($st_id, $pid, $st_seq, $st_frag) = ($1, $2, $3, $4);
 
-	$first_line = $last_line = $line
-		unless defined $first_line;
+    $first_line = $last_line = $line
+        unless defined $first_line;
 
-	# Allows for blocks of log to be unordered. Assumes
-	# earliest found timestamp is start time, and latest
-	# end time, regardless of the order in which they're
-	# encountered.
-	if (defined $line) {
-		$first_line = $line
-			if $line lt $first_line;
-		$last_line = $line
-			if $line gt $last_line;
-	}
+    # Allows for blocks of log to be unordered. Assumes
+    # earliest found timestamp is start time, and latest
+    # end time, regardless of the order in which they're
+    # encountered.
+    if (defined $line) {
+        $first_line = $line
+            if $line lt $first_line;
+        $last_line = $line
+            if $line gt $last_line;
+    }
 
-	my $arr;
+    my $arr;
 
-	# Starting a new statement. Close off
-	# possible previous one and begin new
-	# one.
-	resolve_stmt($pid)
-		if $st_seq == 1;
+    # Starting a new statement. Close off
+    # possible previous one and begin new
+    # one.
+    resolve_stmt($pid)
+        if $st_seq == 1;
 
-	# Skip any entries that start the log
-	# after their first entry.
-	next unless $arr = $query{$pid}{fragments};
+    # Skip any entries that start the log
+    # after their first entry.
+    next unless $arr = $query{$pid}{fragments};
 
-	# "statement_id" is the earliest timestamp/pid
-	# entry found for the statement in question.
-	# It should suffice for a human to identify
-	# the query within the logfiles.
-	$query{$pid}{statement_id} = $st_id
-		if $st_seq == 1;
+    # "statement_id" is the earliest timestamp/pid
+    # entry found for the statement in question.
+    # It should suffice for a human to identify
+    # the query within the logfiles.
+    $query{$pid}{statement_id} = $st_id
+        if $st_seq == 1;
 
-	push (
-		@$arr,
-		$st_frag
+    push (
+        @$arr,
+        $st_frag
         );
 
 } # End while
@@ -681,11 +681,11 @@ sub prettify_query {
     }
     {\n $1}xmsg;
 
-	if (/^SELECT code::text/) {
-		my $count = 0;
-		++$count while m{[(]\s*[?]\s*,\s*[?]\s*[)]}g;
-		print "Has $count freakin' args in the IN list\n";
-	}
+    if (/^SELECT code::text/) {
+        my $count = 0;
+        ++$count while m{[(]\s*[?]\s*,\s*[?]\s*[)]}g;
+        print "Has $count freakin' args in the IN list\n";
+    }
     return ' ' . $_;
 }
 
@@ -699,15 +699,15 @@ sub log_meta {
     # arg and end as second.
 
     for (@lines) {
-		if ($opt{verbose} >= 1) {
-			chomp $_;
-			warn "Checking meta line ($_)\n";
-		}
+        if ($opt{verbose} >= 1) {
+            chomp $_;
+            warn "Checking meta line ($_)\n";
+        }
         m{
             \A
             ( .{19} )
             (?:[+-]\d+:\d+|\s[A-Z]+)
-			\s
+            \s
             ( \S+ )
         }xms or next;
 
@@ -716,9 +716,9 @@ sub log_meta {
         $start ||= $end;
     }
 
-	defined $start or die qq{Unable to find the starting time\n};
+    defined $start or die qq{Unable to find the starting time\n};
 
-	defined $end or die qq{Unable to find the ending time\n};
+    defined $end or die qq{Unable to find the ending time\n};
 
     return ("\u\L$host", $start, $end);
 }
