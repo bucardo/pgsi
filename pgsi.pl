@@ -291,7 +291,9 @@ if ($opt{format} eq 'html') {
 }
 
 
-while (my ($qtype,$arr) = each %$out) {
+for my $qtype (sort {@{$out->{$b}} <=> @{$out->{$a}} } keys %$out) {
+
+    my $arr = $out->{$qtype};
 
     my $type_top_ten = $opt{'top-10-file'}
         ? "$opt{'top-10-path'}$host-$qtype-$opt{'top-10-file'}"
