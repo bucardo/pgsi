@@ -513,7 +513,7 @@ sub get_timelocal_from_line {
 sub get_date_from_line {
     my ($line) = @_;
 
-    my ($year, $mon, $day, $hour, $min, $sec) = 
+    my ($year, $mon, $day, $hour, $min, $sec) =
         $line =~ m{
         (\d{4})
         -
@@ -799,6 +799,8 @@ $deviation
 ${fmstartquery}$queries$fmendquery
 EOP
         }
+
+	return;
 
 } ## end of process_all_queries
 
