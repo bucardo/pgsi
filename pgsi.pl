@@ -272,110 +272,26 @@ for my $hsh (values %canonical_q) {
     }
 }
 
-my %out;
+## Format each query and return a hash based on query_type
+my $out = process_all_queries();
 
-# Sort by SI descending and print out reports.
-for (
-        sort {
-            $canonical_q{$b}{sys_impact}
-                <=>
-            $canonical_q{$a}{sys_impact}
-        }
-        keys %canonical_q
-    )
-{
+## If using HTML format, print a simple table of contents
+if ($opt{format} eq 'html') {
 
-    my $hsh = $canonical_q{$_};
+    print "<ul>\n";
 
-    my $system_impact;
-    if ($hsh->{sys_impact} < 0.001) {
-        $system_impact = sprintf '%0.6f', $hsh->{sys_impact};
+    for my $qtype (sort {@{$out->{$b}} <=> @{$out->{$a}} } keys %$out) {
+
+        my $count = @{$out->{$qtype}};
+
+        my $safename = "${host}_$qtype";
+        print qq{<li><a href="#$safename">$qtype</a> ($count)</li>\n};
     }
-    else {
-        $system_impact = sprintf '%0.3f', $hsh->{sys_impact};
-    }
-    my $duration = sprintf '%0.3f ms', $hsh->{duration};
-    my $count = $hsh->{count};
-    my $interval;
-    if ($hsh->{interval} > 10000) {
-        $interval = sprintf '%d seconds', $hsh->{interval}/1000;
-    }
-    elsif ($hsh->{interval} < 1000) {
-        $interval = sprintf '%0.3f ms', $hsh->{interval};
-    }
-    else {
-        $interval = sprintf '%d ms', $hsh->{interval};
-    }
-    my $deviation = sprintf '%0.3f ms', $hsh->{deviation};
-    if ($count == 1) {
-        $deviation = 'N/A';
-    }
-
-    my $arr =
-        $out{ $hsh->{qtype} }
-            ||= [];
-
-    # If user provides positive integer
-    # in --offenders, add in the actual
-    # durations of the best and worst
-    # number of queries requested in
-    # report. Entry includes full beginning
-    # piece of log entry. Offenders was
-    # used since initially it only displayed
-    # the worst queries, or worst offenders.
-    # Best was just added in for balance.
-    my $offenders = '';
-    if ($opt{offenders}) {
-        $offenders = sprintf(
-            qq{
-<table>
-  <tr>
-    <td align="center">
-      ${fmstartbold}Best$fmendbold
-    </td>
-    <td align="center">
-      ${fmstartbold}Worst$fmendbold
-    </td>
-  </tr>
-  <tr>
-    <td align="left"><ol>%s</ol></td>
-    <td align="left"><ol>%s</ol></td>
-  </tr>
-</table>},
-            map { join '', map { "<li>$_->[0] -- $_->[1] ms</li>" } @$_ } @$hsh{
-                qw( minimum_offenders maximum_offenders )
-            }
-        );
-    }
-
-    my $queries = prettify_query($_) . $offenders;
-
-    my $fmshowborder = $opt{format} eq 'html' ? q{border='1'} : '';
-
-    push (@$arr, <<"EOP");
-<table $fmshowborder>
-<tr>
-<td align="right">
-${fmstartbold}System Impact:$fmendbold<br />
-Avg. Duration:<br />
-Total Count:<br />
-Avg. Interval:<br />
-Std. Deviation:
-</td>
-<td>
-$fmstartbold$system_impact$fmendbold<br />
-$duration<br />
-$count<br />
-$interval<br />
-$deviation
-</td>
-</tr>
-</table>
-${fmstartquery}$queries$fmendquery
-EOP
+    print "</ul>\n";
 }
 
-while (my ($qtype,$arr) = each %out) {
+
+while (my ($qtype,$arr) = each %$out) {
 
     my $type_top_ten = $opt{'top-10-file'}
         ? "$opt{'top-10-path'}$host-$qtype-$opt{'top-10-file'}"
@@ -776,6 +692,114 @@ sub log_meta {
 
     return ("\u\L$host", $start, $end);
 }
+
+
+sub process_all_queries {
+
+	my %out;
+
+	# Sort by SI descending and print out reports.
+	for (
+        sort {
+            $canonical_q{$b}{sys_impact}
+                <=>
+					$canonical_q{$a}{sys_impact}
+				}
+			keys %canonical_q
+    )
+		{
+
+			my $hsh = $canonical_q{$_};
+
+			my $system_impact;
+			if ($hsh->{sys_impact} < 0.001) {
+				$system_impact = sprintf '%0.6f', $hsh->{sys_impact};
+			}
+			else {
+				$system_impact = sprintf '%0.3f', $hsh->{sys_impact};
+			}
+			my $duration = sprintf '%0.3f ms', $hsh->{duration};
+			my $count = $hsh->{count};
+			my $interval;
+			if ($hsh->{interval} > 10000) {
+				$interval = sprintf '%d seconds', $hsh->{interval}/1000;
+			}
+			elsif ($hsh->{interval} < 1000) {
+				$interval = sprintf '%0.3f ms', $hsh->{interval};
+			}
+			else {
+				$interval = sprintf '%d ms', $hsh->{interval};
+			}
+			my $deviation = sprintf '%0.3f ms', $hsh->{deviation};
+			if ($count == 1) {
+				$deviation = 'N/A';
+			}
+
+			my $arr =
+				$out{ $hsh->{qtype} }
+					||= [];
+
+			# If user provides positive integer
+			# in --offenders, add in the actual
+			# durations of the best and worst
+			# number of queries requested in
+			# report. Entry includes full beginning
+			# piece of log entry. Offenders was
+			# used since initially it only displayed
+			# the worst queries, or worst offenders.
+			# Best was just added in for balance.
+			my $offenders = '';
+			if ($opt{offenders}) {
+				$offenders = sprintf(qq{
+<table>
+  <tr>
+    <td align="center">
+      ${fmstartbold}Best$fmendbold
+    </td>
+    <td align="center">
+      ${fmstartbold}Worst$fmendbold
+    </td>
+  </tr>
+  <tr>
+    <td align="left"><ol>%s</ol></td>
+    <td align="left"><ol>%s</ol></td>
+  </tr>
+</table>},
+					 map { join '', map { "<li>$_->[0] -- $_->[1] ms</li>" } @$_ } @$hsh{
+						 qw( minimum_offenders maximum_offenders )
+				 }
+			 );
+			}
+
+			my $queries = prettify_query($_) . $offenders;
+
+			my $fmshowborder = $opt{format} eq 'html' ? q{border='1'} : '';
+
+			push (@$arr, <<"EOP");
+<table $fmshowborder>
+<tr>
+<td align="right">
+${fmstartbold}System Impact:$fmendbold<br />
+Avg. Duration:<br />
+Total Count:<br />
+Avg. Interval:<br />
+Std. Deviation:
+</td>
+<td>
+$fmstartbold$system_impact$fmendbold<br />
+$duration<br />
+$count<br />
+$interval<br />
+$deviation
+</td>
+</tr>
+</table>
+${fmstartquery}$queries$fmendquery
+EOP
+		}
+
+} ## end of process_all_queries
+
 
 sub make_extractor {
     (my $pg_version = shift) =~ s/\W+/_/g;
