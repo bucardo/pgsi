@@ -491,28 +491,28 @@ sub log_interval {
     my $first_timelocal = get_timelocal_from_line($first_line);
     my $second_timelocal = get_timelocal_from_line($second_line);
     my $interval_in_sec = $second_timelocal - $first_timelocal;
-    
+
     # Full log-slice interval in ms
     return $interval_in_sec * 1000;
 }
 
 sub get_timelocal_from_line {
     my ($line) = @_;
-    
+
     my @datetime = get_date_from_line($line);
-    
+
     # timelocal uses 0..11 for months instead of 1..12
     --$datetime[1];
-    
+
     my $int_in_sec =
         Time::Local::timelocal(reverse(@datetime));
-        
+
     return $int_in_sec;
 }
 
 sub get_date_from_line {
     my ($line) = @_;
-    
+
     my ($year, $mon, $day, $hour, $min, $sec) = 
         $line =~ m{
         (\d{4})
@@ -530,7 +530,7 @@ sub get_date_from_line {
         0?
         (\d{1,2})
     }x;
-    
+
     return ($year, $mon, $day, $hour, $min, $sec);
 }
 
@@ -698,61 +698,61 @@ sub log_meta {
 
 sub process_all_queries {
 
-	my %out;
+    my %out;
 
-	# Sort by SI descending and print out reports.
-	for (
+    # Sort by SI descending and print out reports.
+    for (
         sort {
             $canonical_q{$b}{sys_impact}
                 <=>
-					$canonical_q{$a}{sys_impact}
-				}
-			keys %canonical_q
+                    $canonical_q{$a}{sys_impact}
+                }
+            keys %canonical_q
     )
-		{
+        {
 
-			my $hsh = $canonical_q{$_};
+            my $hsh = $canonical_q{$_};
 
-			my $system_impact;
-			if ($hsh->{sys_impact} < 0.001) {
-				$system_impact = sprintf '%0.6f', $hsh->{sys_impact};
-			}
-			else {
-				$system_impact = sprintf '%0.3f', $hsh->{sys_impact};
-			}
-			my $duration = sprintf '%0.3f ms', $hsh->{duration};
-			my $count = $hsh->{count};
-			my $interval;
-			if ($hsh->{interval} > 10000) {
-				$interval = sprintf '%d seconds', $hsh->{interval}/1000;
-			}
-			elsif ($hsh->{interval} < 1000) {
-				$interval = sprintf '%0.3f ms', $hsh->{interval};
-			}
-			else {
-				$interval = sprintf '%d ms', $hsh->{interval};
-			}
-			my $deviation = sprintf '%0.3f ms', $hsh->{deviation};
-			if ($count == 1) {
-				$deviation = 'N/A';
-			}
+            my $system_impact;
+            if ($hsh->{sys_impact} < 0.001) {
+                $system_impact = sprintf '%0.6f', $hsh->{sys_impact};
+            }
+            else {
+                $system_impact = sprintf '%0.3f', $hsh->{sys_impact};
+            }
+            my $duration = sprintf '%0.3f ms', $hsh->{duration};
+            my $count = $hsh->{count};
+            my $interval;
+            if ($hsh->{interval} > 10000) {
+                $interval = sprintf '%d seconds', $hsh->{interval}/1000;
+            }
+            elsif ($hsh->{interval} < 1000) {
+                $interval = sprintf '%0.3f ms', $hsh->{interval};
+            }
+            else {
+                $interval = sprintf '%d ms', $hsh->{interval};
+            }
+            my $deviation = sprintf '%0.3f ms', $hsh->{deviation};
+            if ($count == 1) {
+                $deviation = 'N/A';
+            }
 
-			my $arr =
-				$out{ $hsh->{qtype} }
-					||= [];
+            my $arr =
+                $out{ $hsh->{qtype} }
+                    ||= [];
 
-			# If user provides positive integer
-			# in --offenders, add in the actual
-			# durations of the best and worst
-			# number of queries requested in
-			# report. Entry includes full beginning
-			# piece of log entry. Offenders was
-			# used since initially it only displayed
-			# the worst queries, or worst offenders.
-			# Best was just added in for balance.
-			my $offenders = '';
-			if ($opt{offenders}) {
-				$offenders = sprintf(qq{
+            # If user provides positive integer
+            # in --offenders, add in the actual
+            # durations of the best and worst
+            # number of queries requested in
+            # report. Entry includes full beginning
+            # piece of log entry. Offenders was
+            # used since initially it only displayed
+            # the worst queries, or worst offenders.
+            # Best was just added in for balance.
+            my $offenders = '';
+            if ($opt{offenders}) {
+                $offenders = sprintf(qq{
 <table>
   <tr>
     <td align="center">
@@ -767,17 +767,17 @@ sub process_all_queries {
     <td align="left"><ol>%s</ol></td>
   </tr>
 </table>},
-					 map { join '', map { "<li>$_->[0] -- $_->[1] ms</li>" } @$_ } @$hsh{
-						 qw( minimum_offenders maximum_offenders )
-				 }
-			 );
-			}
+                     map { join '', map { "<li>$_->[0] -- $_->[1] ms</li>" } @$_ } @$hsh{
+                         qw( minimum_offenders maximum_offenders )
+                 }
+             );
+            }
 
-			my $queries = prettify_query($_) . $offenders;
+            my $queries = prettify_query($_) . $offenders;
 
-			my $fmshowborder = $opt{format} eq 'html' ? q{border='1'} : '';
+            my $fmshowborder = $opt{format} eq 'html' ? q{border='1'} : '';
 
-			push (@$arr, <<"EOP");
+            push (@$arr, <<"EOP");
 <table $fmshowborder>
 <tr>
 <td align="right">
@@ -798,7 +798,7 @@ $deviation
 </table>
 ${fmstartquery}$queries$fmendquery
 EOP
-		}
+        }
 
 } ## end of process_all_queries
 
