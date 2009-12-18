@@ -738,7 +738,7 @@ sub prettify_query {
     if (/^SELECT code::text/) {
         my $count = 0;
         ++$count while m{[(]\s*[?]\s*,\s*[?]\s*[)]}g;
-        print "Has $count freakin' args in the IN list\n";
+        ## print "Has $count freakin' args in the IN list\n";
     }
     return ' ' . $_;
 }
