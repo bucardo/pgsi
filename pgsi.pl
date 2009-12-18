@@ -884,12 +884,12 @@ pgsi.pl - Produce system impact reports for a PostgreSQL database.
 
 =head1 VERSION
 
-This documentation refers to version 1.1.1
+This documentation refers to version 1.1.2
 
 =head1 USAGE
 
 
-pgsi.pl [options] < pglog_slice.log 
+pgsi.pl [options] < pglog_slice.log
 
  or...
 
@@ -1101,6 +1101,8 @@ Original code:
 
 Contributions:
     Ethan Rowe (ethan@endpoint.com), End Point Corp.
+    Greg Sabino Mullane (greg@endpoint.com), End Point Corp.
+    Daniel Browning (db@endpoint.com), End Point Corp.
 
 =head1 LICENSE AND COPYRIGHT
 
