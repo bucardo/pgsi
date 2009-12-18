@@ -20,7 +20,7 @@ use Getopt::Long;
 use IO::Handle;
 use 5.008003;
 
-our $VERSION = '1.1.1';
+our $VERSION = '1.1.2';
 
 *STDOUT->autoflush(1);
 *STDERR->autoflush(1);
@@ -40,6 +40,7 @@ my %opt = (
     'pg-version'  => '',
     'offenders'   => 0,
     'verbose'     => 0,
+    'format'      => 'html',
 );
 
 my $USAGE = qq{Usage: $0 -f filename [options]\n};
@@ -55,8 +56,36 @@ GetOptions ( ## no critic
         'help',
         'verbose',
         'file=s',
+        'format=s',
     )
 ) or die $USAGE;
+
+## Prepare formatting vars based on opt{format}
+## The default is 'html':
+my $fmstartbold = q{<b>};
+my $fmendbold = q{</b>};
+my $fmstartheader1 = q{<h1>};
+my $fmendheader1 = q{</h1>};
+my $fmstartheader2 = q{<h2>};
+my $fmendheader2 = q{</h2>};
+my $fmstartheader3 = q{<h3>};
+my $fmendheader3 = q{</h3>};
+my $fmsep = q{<hr />};
+my $fmstartquery = '<pre>';
+my $fmendquery = '</pre>';
+if ($opt{format} eq 'mediawiki') {
+    $fmstartbold    = q{'''};
+    $fmendbold      = q{'''};
+    $fmstartheader1 = q{==};
+    $fmendheader1   = q{==};
+    $fmstartheader2 = q{====};
+    $fmendheader2   = q{====};
+    $fmstartheader3 = q{=====};
+    $fmendheader3   = q{=====};
+    $fmsep          = q{----};
+    $fmstartquery   = '  ';
+    $fmendquery     = '';
+}
 
 # Build an or-list for regex extraction of
 # the query types of interest.
@@ -257,16 +286,30 @@ for (
 {
 
     my $hsh = $canonical_q{$_};
-    my @sprintf_vals =
-        @$hsh{
-            qw/
-                sys_impact
-                duration
-                count
-                interval
-                deviation
-            /
-        };
+
+    my $system_impact;
+    if ($hsh->{sys_impact} < 0.001) {
+        $system_impact = sprintf '%0.6f', $hsh->{sys_impact};
+    }
+    else {
+        $system_impact = sprintf '%0.3f', $hsh->{sys_impact};
+    }
+    my $duration = sprintf '%0.3f ms', $hsh->{duration};
+    my $count = $hsh->{count};
+    my $interval;
+    if ($hsh->{interval} > 10000) {
+        $interval = sprintf '%d seconds', $hsh->{interval}/1000;
+    }
+    elsif ($hsh->{interval} < 1000) {
+        $interval = sprintf '%0.3f ms', $hsh->{interval};
+    }
+    else {
+        $interval = sprintf '%d ms', $hsh->{interval};
+    }
+    my $deviation = sprintf '%0.3f ms', $hsh->{deviation};
+    if ($count == 1) {
+        $deviation = 'N/A';
+    }
 
     my $arr =
         $out{ $hsh->{qtype} }
@@ -284,14 +327,14 @@ for (
     my $offenders = '';
     if ($opt{offenders}) {
         $offenders = sprintf(
-            q{
+            qq{
 <table>
   <tr>
     <td align="center">
-      '''Best'''
+      ${fmstartbold}Best$fmendbold
     </td>
     <td align="center">
-      '''Worst'''
+      ${fmstartbold}Worst$fmendbold
     </td>
   </tr>
   <tr>
@@ -305,28 +348,30 @@ for (
         );
     }
 
-    push (@sprintf_vals, prettify_query($_) . $offenders);
+    my $queries = prettify_query($_) . $offenders;
 
-    push (@$arr, sprintf (<<'EOP', @sprintf_vals));
-<table>
+    my $fmshowborder = $opt{format} eq 'html' ? q{border='1'} : '';
+
+    push (@$arr, <<"EOP");
+<table $fmshowborder>
 <tr>
 <td align="right">
-'''System Impact:'''<br />
+${fmstartbold}System Impact:$fmendbold<br />
 Avg. Duration:<br />
 Total Count:<br />
 Avg. Interval:<br />
 Std. Deviation:
 </td>
 <td>
-'''%0.3f'''<br />
-%0.3f ms<br />
-%d<br />
-%0.3f ms<br />
-%0.3f ms
+$fmstartbold$system_impact$fmendbold<br />
+$duration<br />
+$count<br />
+$interval<br />
+$deviation
 </td>
 </tr>
 </table>
-%s
+${fmstartquery}$queries$fmendquery
 EOP
 }
 
@@ -355,9 +400,18 @@ while (my ($qtype,$arr) = each %out) {
     # convention. Can automate the posting of reports
     # with code that strips first line and uses it
     # for Wiki page.
-    print $all_fh <<"EOP";
-Query_System_Impact:$host:$qtype
-EOP
+
+    my $a1 = '';
+    my $a2 = '';
+    if ($opt{format} eq 'html') {
+        my $safename = "${host}_$qtype";
+        $a1 = qq{<a name="$safename">};
+        $a2 = qq{</a>};
+        print $all_fh qq{${fmstartheader2}${a1}Query System Impact: $host : $qtype${a2}${fmendheader2}\n};
+    }
+    else {
+        print $all_fh qq{Query_System_Impact:$host:$qtype\n};
+    }
 
     # Top 10 lists are put into templates, assuming
     # they will be pulled in to a collection with
@@ -367,11 +421,11 @@ Template:${host}_SI_Top_10:$qtype
 EOP
 
     for my $fh ($all_fh, $top_ten_fh) {
-        print $fh "====Log activity from $start_time to $end_time====\n";
+        print $fh "${fmstartheader3}Log activity from $start_time to $end_time${fmendheader3}\n";
     }
 
-    print $all_fh join ("----\n", @$arr);
-    print $top_ten_fh join ("----\n", grep { defined $_ } @$arr[0..9]);
+    print $all_fh join ("$fmsep\n", @$arr);
+    print $top_ten_fh join ("$fmsep", grep { defined $_ } @$arr[0..9]);
 
     close ($top_ten_fh) or warn "Error closing '$type_top_ten': $!";
     if ($type_all) {
