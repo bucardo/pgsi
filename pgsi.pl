@@ -200,7 +200,7 @@ while (my $line = <$fh>) {
     # Starting a new statement. Close off
     # possible previous one and begin new
     # one.
-    resolve_stmt($pid)
+    resolve_syslog_stmt($pid)
         if $st_seq == 1;
 
     # Skip any entries that start the log
@@ -229,7 +229,7 @@ defined $first_line or die qq{Could not find any matching lines: incorrect forma
 # list.
 while (my ($pid, $hsh) = each %query) {
     next unless exists $hsh->{fragments} and @{ $hsh->{fragments} };
-    resolve_stmt($pid);
+    resolve_syslog_stmt($pid);
 }
 
 # Determine the server and start/end times
@@ -354,7 +354,7 @@ EOP
 close $fh or warn qq{Could not close "$opt{file}": $!\n};
 exit;
 
-sub resolve_stmt {
+sub resolve_syslog_stmt {
 
     my $pid = shift;
 
