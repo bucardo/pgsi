@@ -550,7 +550,15 @@ sub prettify_query {
             select     |
             exists     |
             distinct   |
+            deferred   |
+            show       |
+            commit     |
+            begin      |
             from       |
+            left       |
+            right      |
+            outer      |
+            inner      |
             where      |
             (?:
                 group  |
@@ -566,6 +574,10 @@ sub prettify_query {
             using      |
             left       |
             right      |
+            vacuum     |
+            verbose    |
+            rollback   |
+            fetch      |
             full       |
             join       |
             limit      |
@@ -800,7 +812,7 @@ ${fmstartquery}$queries$fmendquery
 EOP
         }
 
-	return;
+    return;
 
 } ## end of process_all_queries
 
