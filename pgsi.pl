@@ -25,6 +25,8 @@ our $VERSION = '1.1.2';
 *STDOUT->autoflush(1);
 *STDERR->autoflush(1);
 
+my $resolve_called = 0;
+
 my (
     %query,
     %canonical_q,
@@ -41,6 +43,7 @@ my %opt = (
     'offenders'   => 0,
     'verbose'     => 0,
     'format'      => 'html',
+    'mode'        => 'pid',
 );
 
 my $USAGE = qq{Usage: $0 -f filename [options]\n};
@@ -54,9 +57,10 @@ GetOptions ( ## no critic
         'pg-version=s',
         'offenders=i',
         'help',
-        'verbose',
+        'verbose+',
         'file=s',
         'format=s',
+        'mode=s',
     )
 ) or die $USAGE;
 
@@ -87,63 +91,196 @@ if ($opt{format} eq 'mediawiki') {
     $fmendquery     = '';
 }
 
-# Build an or-list for regex extraction of
-# the query types of interest.
-my $query_types = $opt{'query-types'}
-    ? join (
-        '|',
-        grep { /\w/ && !$seen{$_}++ }
-            split (
-                /[,\s]+/,
-                "\L$opt{'query-types'}"
-            )
-      )
-    : 'select'
-;
-
-# Partition the top-10 or all file-patterns
-# into their path and file-name components
-for my $k ( qw/top-10 all/ ) {
-    local ($_) = delete $opt{$k};
-    my @v =
-        map { defined ($_) ? $_ : '' }
-            m{(.*/)?(.*)};
-    my @k =
-        map {"$k-$_"} qw/path file/;
-    @opt{@k} = @v;
+## We either read from a file or from stdin
+my $fh;
+if ($opt{file}) {
+    open $fh, '<', $opt{file} or die qq{Could not open "$opt{file}": $!\n};
+}
+else {
+    $fh = \*STDIN;
 }
 
-# Base regex to capture the main pieces of
-# each log line entry
-my $statement_re =
-    qr{
-        ^(.+?
-            postgres\[
-                (\d+)
-            \]
-        ):
-        \s+
-        \[
-            \d+
-            -
-            (\d+)
-        \]
-        \s
-        (.*)
-    }xms;
+## Do the actual parsing. Depends on what kind of log file we have
+if ('pid' eq $opt{mode}) {
+    parse_pid_log();
+}
+elsif ('syslog' eq $opt{mode}) {
+    parse_syslog_log();
+}
+else {
+    die qq{Unknown mode: $opt{mode}\n};
+}
 
-# Create the appropriate regex to pull out the actual query depending on the
-# format implied by --pg-version. Blesses regex into the appropriate namespace
-# to simplify access to routines that deviate between log formats.
-my $extract_query_re =
-    make_extractor(
-        $opt{'pg-version'},
-        $query_types
+sub parse_pid_log {
+
+    ## Parse a log file in which the pid appears in the log_line_prefix
+    ## and multi-line statements start with tabs
+
+	## Each line of interest, with PIDs as the keys
+	my %logline;
+
+    ## The last PID we saw. Used to populate multi-line statements correctly.
+    my $lastpid = 0;
+
+    ## We only store multi-line if the previous real line was a log: statement
+    my $lastwaslog=0;
+
+    while (my $line = <$fh>) {
+
+        if ($opt{verbose} >= 2) {
+            chomp $line;
+            warn "Checking line ($line)\n";
+        }
+
+        ## There are only two possiblities we care about:
+        ## 1. tab-prefixed line (continuation of a literal)
+        ## 2. new date-and-pid-prefixed line
+
+        if ($line =~ /^\t(.*)/) {
+            ## If the last real line was a statement, append this to last PID seen
+            if ($lastwaslog) {
+                (my $extra = $1) =~ s/^\s+//;
+                $logline{$lastpid}{statement} .= " $extra";
+            }
+            next;
+        }
+
+        ## TODO: Make this more flexible
+        ## Got a valid PID line?
+        if ($line =~ /^(\d\d\d\d\-\d\d\-\d\d \d\d:\d\d:\d\d).+?(\d+)\s+(.+)/o) {
+            my ($date,$pid,$more) = ($1,$2,$3);
+
+            ## Example:
+            ## 2009-12-03 08:12:05 PST 11717 4b17e355.2dc5 127.0.0.1 dbuser dbname LOG:  statement: SELECT ...
+
+            ## Make sure any subsequent multi-line statements know where to go
+            $lastpid = $pid;
+
+            ## Reset the last log indicator
+            $lastwaslog = 0;
+
+            ## All we care about is statements and durations
+
+            ## Got a duration? Store it for this PID and move on
+            if ($more =~ /LOG:  duration: (\d+\.\d+) ms$/o) {
+                my $duration = $1;
+                ## Store this duration, overwriting what is (presumably) -1
+                $logline{$pid}{duration} = $duration;
+                next;
+            }
+
+            ## Got a statement? Handle the old one and store the new
+            if ($more =~ /LOG:  statement:\s+(.+)/o) {
+                my $statement = $1;
+
+                ## Slurp in any multi-line continuatiouns after this
+                $lastwaslog = 1;
+
+                ## If this PID has something stored, process it first
+                if (exists $logline{$pid}) {
+                    resolve_pid_statement($logline{$pid});
+                }
+
+                ## Store and blow away any old value
+                $logline{$pid} = {
+                    line      => $line,
+                    statement => $statement,
+                    duration  => -1,
+                    date      => $date,
+                };
+
+                ## Make sure we have a first and a last line
+                if (not defined $first_line) {
+                    $first_line = $last_line = $line;
+                }
+
+            } ## end LOG: statement
+
+            next;
+
+        } ## end if valid PID line
+
+        die "Invalid line $.: $line\n";
+
+    } ## End while
+
+    defined $first_line or die qq{Could not find any matching lines: incorrect format??\n};
+
+    ## Process any PIDS that are left
+    for my $pid (keys %logline) {
+        resolve_pid_statement($logline{$pid});
+    }
+
+    ## Store the last PID seen as the last line
+    $last_line = $logline{$lastpid}{line};
+
+} ## end of parse_pid_log
+
+
+## Globals used by syslog: move or refactor
+my ($extract_query_re, $extract_duration_re);
+
+sub parse_syslog_log {
+
+    # Todo: Move this out
+
+    # Build an or-list for regex extraction of
+    # the query types of interest.
+    my $query_types = $opt{'query-types'}
+        ? join (
+            '|',
+            grep { /\w/ && !$seen{$_}++ }
+                split (
+                    /[,\s]+/,
+                    "\L$opt{'query-types'}"
+            )
+        )
+            : 'select'
+    ;
+
+    # Partition the top-10 or all file-patterns
+    # into their path and file-name components
+    for my $k ( qw/top-10 all/ ) {
+        local ($_) = delete $opt{$k};
+        my @v =
+            map { defined ($_) ? $_ : '' }
+                m{(.*/)?(.*)};
+        my @k =
+            map {"$k-$_"} qw/path file/;
+        @opt{@k} = @v;
+    }
+
+    # Base regex to capture the main pieces of
+    # each log line entry
+    my $statement_re =
+        qr{
+              ^(.+?
+                  postgres\[
+                  (\d+)
+                  \]
+              ):
+              \s+
+              \[
+              \d+
+              -
+              (\d+)
+              \]
+              \s
+              (.*)
+      }xms;
+
+    # Create the appropriate regex to pull out the actual query depending on the
+    # format implied by --pg-version. Blesses regex into the appropriate namespace
+    # to simplify access to routines that deviate between log formats.
+    $extract_query_re =
+        make_extractor(
+            $opt{'pg-version'},
+            $query_types
     );
 
-# Regex specifically for the concluding duration
-# entry after a query finishes.
-my $extract_duration_re =
+    # Regex specifically for the concluding duration
+    # entry after a query finishes.
+    $extract_duration_re =
     qr{
         \A
         log:
@@ -157,80 +294,70 @@ my $extract_duration_re =
         )
     }xms;
 
-my $fh;
-if ($opt{file}) {
-    open $fh, '<', $opt{file} or die qq{Could not open "$opt{file}": $!\n};
-}
-else {
-    $fh = \*STDIN;
-}
+    while (my $line = <$fh>) {
 
-while (my $line = <$fh>) {
+        if ($opt{verbose} >= 2) {
+            chomp $line;
+            warn "Checking line ($line)\n";
+        }
 
-    if ($opt{verbose} >= 2) {
-        chomp $line;
-        warn "Checking line ($line)\n";
-    }
+        # Lines that don't match the basic format are ignored.
+        if ($line !~ $statement_re) {
+            chomp $line;
+            $opt{verbose} and warn "Line $. did not match: $line\n";
+            next;
+        }
 
-    # Lines that don't match the basic format are ignored.
-    if ($line !~ $statement_re) {
-        chomp $line;
-        $opt{verbose} and warn "Line $. did not match: $line\n";
-        next;
-    }
+        my ($st_id, $pid, $st_seq, $st_frag) = ($1, $2, $3, $4);
 
-    my ($st_id, $pid, $st_seq, $st_frag) = ($1, $2, $3, $4);
+        $first_line = $last_line = $line
+            unless defined $first_line;
 
-    $first_line = $last_line = $line
-        unless defined $first_line;
+        # Allows for blocks of log to be unordered. Assumes earliest found timestamp 
+        # is start time, and latest end time, regardless of the order in which 
+        # they're encountered.
+        if (defined $line) {
+            $first_line = $line
+                if $line lt $first_line;
+            $last_line = $line
+                if $line gt $last_line;
+        }
 
-    # Allows for blocks of log to be unordered. Assumes
-    # earliest found timestamp is start time, and latest
-    # end time, regardless of the order in which they're
-    # encountered.
-    if (defined $line) {
-        $first_line = $line
-            if $line lt $first_line;
-        $last_line = $line
-            if $line gt $last_line;
-    }
+        my $arr;
 
-    my $arr;
+        # Starting a new statement. Close off possible previous one and begin new one.
+        resolve_syslog_stmt($pid)
+            if $st_seq == 1;
 
-    # Starting a new statement. Close off
-    # possible previous one and begin new
-    # one.
-    resolve_syslog_stmt($pid)
-        if $st_seq == 1;
+        # Skip any entries that start the log
+        # after their first entry.
+        next unless $arr = $query{$pid}{fragments};
 
-    # Skip any entries that start the log
-    # after their first entry.
-    next unless $arr = $query{$pid}{fragments};
+        # "statement_id" is the earliest timestamp/pid
+        # entry found for the statement in question.
+        # It should suffice for a human to identify
+        # the query within the logfiles.
+        $query{$pid}{statement_id} = $st_id
+            if $st_seq == 1;
 
-    # "statement_id" is the earliest timestamp/pid
-    # entry found for the statement in question.
-    # It should suffice for a human to identify
-    # the query within the logfiles.
-    $query{$pid}{statement_id} = $st_id
-        if $st_seq == 1;
-
-    push (
-        @$arr,
-        $st_frag
+        push (
+            @$arr,
+            $st_frag
         );
 
-} # End while
+    } # end while
 
-defined $first_line or die qq{Could not find any matching lines: incorrect format?\n};
+    defined $first_line or die qq{Could not find any matching lines: incorrect format?\n};
 
-# Go through all entries that haven't been resolved
-# (indicated by the presence of elements in the
-# fragments array) and add them to the canonical
-# list.
-while (my ($pid, $hsh) = each %query) {
-    next unless exists $hsh->{fragments} and @{ $hsh->{fragments} };
-    resolve_syslog_stmt($pid);
-}
+    # Go through all entries that haven't been resolved
+    # (indicated by the presence of elements in the
+    # fragments array) and add them to the canonical list.
+    while (my ($pid, $hsh) = each %query) {
+        next unless exists $hsh->{fragments} and @{ $hsh->{fragments} };
+        resolve_syslog_stmt($pid);
+    }
+
+} ## end of parse_syslog_log
 
 # Determine the server and start/end times
 # from the oldest and newest log lines.
@@ -289,7 +416,6 @@ if ($opt{format} eq 'html') {
     }
     print "</ul>\n";
 }
-
 
 for my $qtype (sort {@{$out->{$b}} <=> @{$out->{$a}} } keys %$out) {
 
@@ -352,6 +478,9 @@ EOP
 }
 
 close $fh or warn qq{Could not close "$opt{file}": $!\n};
+
+warn "Items processed: $resolve_called\n";
+
 exit;
 
 sub resolve_syslog_stmt {
@@ -480,8 +609,128 @@ sub resolve_syslog_stmt {
     }
 
     @$prev = ();
+
     return 1;
-}
+
+} ## end of resolve_syslog_statement
+
+
+sub resolve_pid_statement {
+
+    my $info = shift or die;
+
+    $resolve_called++;
+
+    my $string = lc $info->{statement};
+    my $duration = $info->{duration};
+
+    # Get rid of SQL comments!
+    $string =~ s/\s*--.*$//mg;
+    $string =~ s{/[*].*?[*]/}{}msg;
+
+    ## Lost the final semi-colon
+    $string =~ s/;\s*$//;
+
+    # Tidy up spaces
+    $string =~ s/#011/ /g;
+    $string =~ s/^\s+|\s+$//g;
+    $string =~ s/\s+/ /g;
+
+    my $main_query = $string;
+
+    # Clean out arguments
+    # Quoted string
+    $main_query =~ s/'(?:''|\\+'?|[^'\\]+)*'/?/g;
+
+    # Numeric no quote, and bind params
+    $main_query =~ s/(?<=[^\w.])[\$-]?(?:\d*[.])?\d+\b/?/g;
+
+    # Collapsing IN () lists, so queries deviating
+    # only by 'IN (?,?)' and 'IN (?,?,?)' are logged
+    # as "the same"
+    $main_query =~
+        s{
+                # Starts IN ...
+                \s in \s?
+                # Outermost paren for IN list
+                [(]
+                    (?:
+                        # Could be list of rows
+                        [(] [?,\s\$]* [)]
+                            |
+                        # or the standard stuff of a scalar list
+                        [?,\s\$]+
+                    )+
+                # Until we close the full IN list
+                [)]
+            }
+            { in (?+)}xmsg;
+
+    $main_query =~ s/^begin;//io unless $main_query =~ m{^begin;$};
+
+    return 0 if $main_query !~ /\w/; ## e.g. a single ;
+
+    # Figure out what type of query this is
+    if ($main_query !~ m{(\w+)}) {
+        warn Dumper $info;
+        warn "Could not find the type of query for $main_query from $string\n";
+        exit;
+    }
+    my $query_type = uc $1;
+
+    # Add canonical query to count hash
+    my $hsh =
+        $canonical_q{ $main_query }
+            ||= {
+                count             => 0,
+                duration          => 0,
+                deviation         => 0,
+                qtype             => $query_type,
+                minimum_offenders => [ [ $duration ] ],
+                minimum_threshold => $duration,
+                maximum_offenders => [ [ $duration ] ],
+                maximum_threshold => $duration,
+                durations         => [],
+            };
+
+    ++$hsh->{count};
+    $hsh->{duration} += $duration;
+    push @{$hsh->{durations}}, $duration;
+
+    # If we're tracking offenders (best/worst queries)
+    # add them in if the newest one measures as one of the
+    # best or worst.
+    if ($opt{offenders}) {
+        my $fixme = 1;
+        if ($duration > $hsh->{maximum_threshold}) {
+            my $array = $hsh->{maximum_offenders};
+            @$array = (
+                sort { $b->[1] <=> $a->[1] }
+                    @$array,
+                [ $fixme, $duration ],
+        );
+            splice (@$array, $opt{offenders}) if @$array > $opt{offenders};
+            $hsh->{maximum_threshold} = $array->[-1]->[1];
+        }
+
+        if ($duration < $hsh->{minimum_threshold}) {
+            my $array = $hsh->{minimum_offenders};
+            @$array = (
+                sort { $a->[1] <=> $b->[1] }
+                    @$array,
+                [ $fixme, $duration ],
+        );
+            splice (@$array, $opt{offenders}) if @$array > $opt{offenders};
+            $hsh->{maximum_threshold} = $array->[-1]->[1];
+        }
+    }
+
+    #@$prev = ();
+
+    return 1;
+
+} ## end of resolve_pid_statement
+
 
 # Expects first arg as log entry of earliest time
 # and second arg as log entry of latest time
@@ -535,6 +784,7 @@ sub get_date_from_line {
 }
 
 sub prettify_query {
+
     local ($_) = shift;
 
     # Perform some basic transformations
@@ -632,13 +882,16 @@ sub prettify_query {
     }
     {\U$1}xmsg;
 
-    # line break after certain
-    # sql keywords
+    s{,CASE}{, CASE}g;
+
+    # line break after certain sql keywords
     s{
         (?<!DELETE)
         \s
         (
             SELECT    |
+            (?: INNER \s JOIN) |
+            CASE      |
             FROM      |
             (?:
                 (?: LEFT | RIGHT | FULL )
@@ -665,47 +918,52 @@ sub prettify_query {
     }
     {\n $1}xmsg;
 
-    if (/^SELECT code::text/) {
-        my $count = 0;
-        ++$count while m{[(]\s*[?]\s*,\s*[?]\s*[)]}g;
-        ## print "Has $count freakin' args in the IN list\n";
-    }
-    return ' ' . $_;
-}
+    return $_;
+
+} ## end of prettify_query
 
 sub log_meta {
+
     my @lines = @_;
 
     my ($host, $start, $end);
 
-    # Pull out start and end times,
-    # and host. Assumes start as first
-    # arg and end as second.
+    # Pull out host, start time, and end time.
+    # Assumes start as first arg and end as second.
 
-    for (@lines) {
+    for my $line (@lines) {
+
         if ($opt{verbose} >= 1) {
-            chomp $_;
-            warn "Checking meta line ($_)\n";
+            chomp $line;
+            warn "Checking meta line ($line)\n";
         }
-        m{
-            \A
-            ( .{19} )
-            (?:[+-]\d+:\d+|\s[A-Z]+)
-            \s
-            ( \S+ )
-        }xms or next;
+
+		my $line_regex = qr{FAIL};
+		if ('pid' eq $opt{mode}) {
+			$line_regex = qr{(.{19}) [A-Z]+ \d+ [^ ]+ [^ ]+ (\w+)};
+		}
+		elsif ('syslog' eq $opt{mode}) {
+			$line_regex = qr{(.{19})(?:[+-]\d+:\d+|\s[A-Z]+)\s( \S+ )};
+		}
+		else {
+			die qq{Invalid mode: $opt{mode}\n};
+		}
+
+		$line =~ /$line_regex/ms or next;
 
         $end = $1; ## no critic
         $host ||= $2; ## no critic
         $start ||= $end;
+
     }
 
     defined $start or die qq{Unable to find the starting time\n};
 
     defined $end or die qq{Unable to find the ending time\n};
 
-    return ("\u\L$host", $start, $end);
-}
+    return ($host, $start, $end);
+
+} ## end of log_meta
 
 
 sub process_all_queries {
@@ -716,10 +974,10 @@ sub process_all_queries {
     for (
         sort {
             $canonical_q{$b}{sys_impact}
-                <=>
-                    $canonical_q{$a}{sys_impact}
-                }
-            keys %canonical_q
+            <=>
+            $canonical_q{$a}{sys_impact}
+            }
+        keys %canonical_q
     )
         {
 
@@ -812,7 +1070,7 @@ ${fmstartquery}$queries$fmendquery
 EOP
         }
 
-    return;
+    return \%out;
 
 } ## end of process_all_queries
 
