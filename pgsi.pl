@@ -44,6 +44,7 @@ my %opt = (
     'verbose'     => 0,
     'format'      => 'html',
     'mode'        => 'pid',
+    'color'       => 1,
 );
 
 my $USAGE = qq{Usage: $0 -f filename [options]\n};
@@ -61,6 +62,7 @@ GetOptions ( ## no critic
         'file=s',
         'format=s',
         'mode=s',
+        'color!',
     )
 ) or die $USAGE;
 
@@ -90,6 +92,21 @@ if ($opt{format} eq 'mediawiki') {
     $fmstartquery   = '  ';
     $fmendquery     = '';
 }
+
+my $minwrap1 = 80;
+my $minwrap2 = 40; ## WHEN .. THEN
+
+## Any keywords after the first
+my $indent1 = ' ' x 1;
+
+## Wrapping of long lines of a single type
+my $indent2 = ' ' x 3;
+
+## Secondary wrapping of a single type
+my $indent3 = ' ' x 5;
+
+## Even more indenting
+my $indent4 = ' ' x 7;
 
 ## We either read from a file or from stdin
 my $fh;
@@ -402,8 +419,30 @@ for my $hsh (values %canonical_q) {
 ## Format each query and return a hash based on query_type
 my $out = process_all_queries();
 
-## If using HTML format, print a simple table of contents
+## If using HTML format, print a simple head and table of contents
 if ($opt{format} eq 'html') {
+
+	## DTD blah blah
+	print qq{<!DOCTYPE html
+PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml11/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US" lang="en-US">
+<head>
+<title>Postgres System Impact Report</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+\n};
+
+	if ($opt{color}) {
+		print qq!<style type="text/css">
+span.prealias    { color: red;    font-weight: bolder;                           }
+span.pretable    { color: purple; font-weight: bolder;                           }
+span.prekeyword  { color: blue;   font-weight: bolder;                           }
+span.presemi     { color: white;  font-weight: normal; background-color: purple; }
+span.prequestion { color: red;    font-weight: normal                            }
+</style>
+!;
+	}
+	print qq{</head>\n<body>\n};
 
     print "<ul>\n";
 
@@ -451,7 +490,7 @@ for my $qtype (sort {@{$out->{$b}} <=> @{$out->{$a}} } keys %$out) {
         my $safename = "${host}_$qtype";
         $a1 = qq{<a name="$safename">};
         $a2 = qq{</a>};
-        print $all_fh qq{${fmstartheader2}${a1}Query System Impact: $host : $qtype${a2}${fmendheader2}\n};
+        print $all_fh qq{${fmstartheader2}${a1}Query System Impact : $host : $qtype${a2}${fmendheader2}\n};
     }
     else {
         print $all_fh qq{Query_System_Impact:$host:$qtype\n};
@@ -475,6 +514,11 @@ EOP
     if ($type_all) {
         close ($all_fh) or warn "Error closing '$type_all': $!";
     }
+}
+
+
+if ($opt{format} eq 'html') {
+	print "</body></html>\n";
 }
 
 close $fh or warn qq{Could not close "$opt{file}": $!\n};
@@ -503,8 +547,8 @@ sub resolve_syslog_stmt {
     # canonize and store.
     my $full_statement = lc (join (' ', @$prev));
 
-    # Get rid of SQL comments!
-    $full_statement =~ s/\s*--.*$//mg;
+    # Get rid of SQL comments
+    #$full_statement =~ s/\s*--.*$//mg;
     $full_statement =~ s{/[*].*?[*]/}{}msg;
 
     # Tidy up spaces
@@ -624,11 +668,11 @@ sub resolve_pid_statement {
     my $string = lc $info->{statement};
     my $duration = $info->{duration};
 
-    # Get rid of SQL comments!
-    $string =~ s/\s*--.*$//mg;
+    # Get rid of SQL comments, carefully
+    $string =~ s/\s*--(?!.*').*$//mg;
     $string =~ s{/[*].*?[*]/}{}msg;
 
-    ## Lost the final semi-colon
+    ## Lose the final semi-colon
     $string =~ s/;\s*$//;
 
     # Tidy up spaces
@@ -787,16 +831,10 @@ sub prettify_query {
 
     local ($_) = shift;
 
-    # Perform some basic transformations
-    # to try to make the query more readable.
-    # It's not perfect, but much better than
-    # all one line, all lower case.
-    # Also prefixes a single space to each
-    # line for wiki blockquote format.
+    # Perform some basic transformations to try to make the query more readable.
+    # It's not perfect, but much better than all one line, all lower case.
 
-    # uc sql keywords
-    s{
-        \b(
+	my $keywords = qr{
             select     |
             exists     |
             distinct   |
@@ -869,6 +907,7 @@ sub prettify_query {
             trigger    |
             rule       |
             references |
+			substring  |
             foreign
             \s key     |
             (?:
@@ -877,10 +916,10 @@ sub prettify_query {
             ) able     |
             listen     |
             notify     |
-            index
-        )\b
-    }
-    {\U$1}xmsg;
+            index}xi;
+
+	# Change all known keywords to uppercase
+    s{\b($keywords)\b}{\U$1}msg;
 
     s{,CASE}{, CASE}g;
 
@@ -892,7 +931,7 @@ sub prettify_query {
             SELECT    |
             (?: INNER \s JOIN) |
             CASE      |
-            FROM      |
+            (?:FROM(?!\s\?)(?!\sposition))|
             (?:
                 (?: LEFT | RIGHT | FULL )
                 (?: \s OUTER )?
@@ -916,11 +955,69 @@ sub prettify_query {
             REFERENCES
         )
     }
-    {\n $1}xmsg;
+    {\n${indent1}$1}xmsg;
+
+	## Straighten out multiple question marks into a consistent style
+	s{\?\s*,\s*\?}{?, ?}go;
+	s{\s*\=\s*\?}{ = ?}go;
+	s{<>\?}{<> ?}go;
+
+	## Space out comma items
+	s{ *, *}{, }gso;
+
+	## Subselects start a new line
+	s{^( +FROM \()}{$1\n}mgo;
+
+	# Wrap long SET lines
+	s{^(\s*SET .{$minwrap1,}?,\s*)(.+? = .*)}{$1\n$indent2$2}mgo;
+
+	# Trim long lines at a comma if starts with:
+	# SELECT, GROUP BY, VALUE, INSERT
+	s{^(\s*(?:SELECT|GROUP BY|INSERT|VALUES) .{$minwrap1,}?, )(.+)}{$1\n$indent2$2}mgo;
+
+	# Wrap long WHERE..AND lines
+	s{^(\s*WHERE .{$minwrap1,}?)(\bAND .+)}{$1\n$indent2$2}mgo;
+	1 while $_ =~ s{^(${indent2}AND .{$minwrap1,}?)(\bAND .+)}{$1\n$indent2$2}mgo;
+
+	# Much munging of CASE .. WHEN .. END
+	s{^\s*(CASE .*?)(\bWHEN .+)}{${indent2}$1\n$indent3$2}mgo;
+	# Wrap the rest of the WHENs
+	1 while $_ =~ s{^( +WHEN .+? )(WHEN.+)}{$1\n$indent3$2}mgo;
+	# Same for WHEN THEN but indent more, and only over a certain level
+	1 while $_ =~ s{^( +(?:WHEN|THEN) .{$minwrap2,}? )(THEN.+)}{$1\n$indent4$2}mgo;
+	# Put END AS on its own line
+	s{ +(END AS \w+)}{\n${indent2}$1}go;
+	# Wrap stuff beyond the end properly
+	s{^(\s+END AS \w+,) *(\w)}{$1\n${indent2}$2}mgo;
+
+	## Trim any hanging non-keyword lines from above
+	1 while $_ =~ s{^(${indent2}(?:[a-z]|NULL|\?).{$minwrap1,}?, )(\w.*)}{$1\n$indent2$2}mgo;
+
+	# Wrap if we are doing multiple commands on one line
+	s{;\s*([A-Z])}{\n;\n$1}go;
+
+	## Add in any optional CSS to make the formatting even prettier
+	if ($opt{color}) {
+		## Table aliases and tables:
+		s{((?:FROM|JOIN)\s+(?!position)\w+\s+AS)\s+(\w+)}{$1 <span class="prealias">$2</span>}gos;
+		1 while $_ =~ s{((?:FROM|JOIN)\s+.+?, \w+\s+AS)\s+(\w+)}{$1 <span class="prealias">$2</span>}gos;
+		s{(FROM|JOIN)\s+(?!position)(\w+)}{$1 <span class="pretable">$2</span>}go;
+		1 while $_ =~ s{((?:FROM|JOIN)\s+.+?,) (\w+)}{$1 <span class="pretable">$2</span>}gos;
+
+		## Highlight all keywords
+		s{\b($keywords)\b}{<span class="prekeyword">$1</span>}go;
+
+		## Highlight semicolons indicating multiple statements
+		s{\n;\n}{\n<span class="presemi">;</span>\n}go;
+
+		## Highlight placeholders (question marks)
+		s{(\W)(\?)(\W|\Z)}{$1<span class="prequestion">$2</span>$3}gso;
+	}
 
     return $_;
 
 } ## end of prettify_query
+
 
 sub log_meta {
 
@@ -1068,6 +1165,7 @@ $deviation
 </table>
 ${fmstartquery}$queries$fmendquery
 EOP
+
         }
 
     return \%out;
