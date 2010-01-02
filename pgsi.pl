@@ -20,7 +20,7 @@ use Getopt::Long;
 use IO::Handle;
 use 5.008003;
 
-our $VERSION = '1.2.0';
+our $VERSION = '1.2.1';
 
 *STDOUT->autoflush(1);
 *STDERR->autoflush(1);
@@ -57,6 +57,7 @@ GetOptions ( ## no critic
         'query-types=s',
         'pg-version=s',
         'offenders=i',
+        'version',
         'help',
         'verbose+',
         'file=s',
@@ -65,6 +66,11 @@ GetOptions ( ## no critic
         'color!',
     )
 ) or die $USAGE;
+
+if ($opt{version}) {
+	print "$0 version $VERSION\n";
+	exit 0;
+}
 
 ## Prepare formatting vars based on opt{format}
 ## The default is 'html':
@@ -133,8 +139,8 @@ sub parse_pid_log {
     ## Parse a log file in which the pid appears in the log_line_prefix
     ## and multi-line statements start with tabs
 
-	## Each line of interest, with PIDs as the keys
-	my %logline;
+    ## Each line of interest, with PIDs as the keys
+    my %logline;
 
     ## The last PID we saw. Used to populate multi-line statements correctly.
     my $lastpid = 0;
@@ -422,8 +428,7 @@ my $out = process_all_queries();
 ## If using HTML format, print a simple head and table of contents
 if ($opt{format} eq 'html') {
 
-	## DTD blah blah
-	print qq{<!DOCTYPE html
+    print qq{<!DOCTYPE html
 PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
 "http://www.w3.org/TR/xhtml11/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US" lang="en-US">
@@ -432,8 +437,8 @@ PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 \n};
 
-	if ($opt{color}) {
-		print qq!<style type="text/css">
+    if ($opt{color}) {
+        print qq!<style type="text/css">
 span.prealias    { color: red;    font-weight: bolder;                           }
 span.pretable    { color: purple; font-weight: bolder;                           }
 span.prekeyword  { color: blue;   font-weight: bolder;                           }
@@ -441,8 +446,8 @@ span.presemi     { color: white;  font-weight: normal; background-color: purple;
 span.prequestion { color: red;    font-weight: normal                            }
 </style>
 !;
-	}
-	print qq{</head>\n<body>\n};
+    }
+    print qq{</head>\n<body>\n};
 
     print "<ul>\n";
 
@@ -518,7 +523,7 @@ EOP
 
 
 if ($opt{format} eq 'html') {
-	print "</body></html>\n";
+    print "</body></html>\n";
 }
 
 close $fh or warn qq{Could not close "$opt{file}": $!\n};
@@ -834,7 +839,7 @@ sub prettify_query {
     # Perform some basic transformations to try to make the query more readable.
     # It's not perfect, but much better than all one line, all lower case.
 
-	my $keywords = qr{
+    my $keywords = qr{
             select     |
             exists     |
             distinct   |
@@ -907,7 +912,7 @@ sub prettify_query {
             trigger    |
             rule       |
             references |
-			substring  |
+            substring  |
             foreign
             \s key     |
             (?:
@@ -918,7 +923,7 @@ sub prettify_query {
             notify     |
             index}xi;
 
-	# Change all known keywords to uppercase
+    # Change all known keywords to uppercase
     s{\b($keywords)\b}{\U$1}msg;
 
     s{,CASE}{, CASE}g;
@@ -957,62 +962,62 @@ sub prettify_query {
     }
     {\n${indent1}$1}xmsg;
 
-	## Straighten out multiple question marks into a consistent style
-	s{\?\s*,\s*\?}{?, ?}go;
-	s{\s*\=\s*\?}{ = ?}go;
-	s{<>\?}{<> ?}go;
+    ## Straighten out multiple question marks into a consistent style
+    s{\?\s*,\s*\?}{?, ?}go;
+    s{\s*\=\s*\?}{ = ?}go;
+    s{<>\?}{<> ?}go;
 
-	## Space out comma items
-	s{ *, *}{, }gso;
+    ## Space out comma items
+    s{ *, *}{, }gso;
 
-	## Subselects start a new line
-	s{^( +FROM \()}{$1\n}mgo;
+    ## Subselects start a new line
+    s{^( +FROM \()}{$1\n}mgo;
 
-	# Wrap long SET lines
-	s{^(\s*SET .{$minwrap1,}?,\s*)(.+? = .*)}{$1\n$indent2$2}mgo;
+    # Wrap long SET lines
+    s{^(\s*SET .{$minwrap1,}?,\s*)(.+? = .*)}{$1\n$indent2$2}mgo;
 
-	# Trim long lines at a comma if starts with:
-	# SELECT, GROUP BY, VALUE, INSERT
-	s{^(\s*(?:SELECT|GROUP BY|INSERT|VALUES) .{$minwrap1,}?, )(.+)}{$1\n$indent2$2}mgo;
+    # Trim long lines at a comma if starts with:
+    # SELECT, GROUP BY, VALUE, INSERT
+    s{^(\s*(?:SELECT|GROUP BY|INSERT|VALUES) .{$minwrap1,}?, )(.+)}{$1\n$indent2$2}mgo;
 
-	# Wrap long WHERE..AND lines
-	s{^(\s*WHERE .{$minwrap1,}?)(\bAND .+)}{$1\n$indent2$2}mgo;
-	1 while $_ =~ s{^(${indent2}AND .{$minwrap1,}?)(\bAND .+)}{$1\n$indent2$2}mgo;
+    # Wrap long WHERE..AND lines
+    s{^(\s*WHERE .{$minwrap1,}?)(\bAND .+)}{$1\n$indent2$2}mgo;
+    1 while $_ =~ s{^(${indent2}AND .{$minwrap1,}?)(\bAND .+)}{$1\n$indent2$2}mgo;
 
-	# Much munging of CASE .. WHEN .. END
-	s{^\s*(CASE .*?)(\bWHEN .+)}{${indent2}$1\n$indent3$2}mgo;
-	# Wrap the rest of the WHENs
-	1 while $_ =~ s{^( +WHEN .+? )(WHEN.+)}{$1\n$indent3$2}mgo;
-	# Same for WHEN THEN but indent more, and only over a certain level
-	1 while $_ =~ s{^( +(?:WHEN|THEN) .{$minwrap2,}? )(THEN.+)}{$1\n$indent4$2}mgo;
-	# Put END AS on its own line
-	s{ +(END AS \w+)}{\n${indent2}$1}go;
-	# Wrap stuff beyond the end properly
-	s{^(\s+END AS \w+,) *(\w)}{$1\n${indent2}$2}mgo;
+    # Much munging of CASE .. WHEN .. END
+    s{^\s*(CASE .*?)(\bWHEN .+)}{${indent2}$1\n$indent3$2}mgo;
+    # Wrap the rest of the WHENs
+    1 while $_ =~ s{^( +WHEN .+? )(WHEN.+)}{$1\n$indent3$2}mgo;
+    # Same for WHEN THEN but indent more, and only over a certain level
+    1 while $_ =~ s{^( +(?:WHEN|THEN) .{$minwrap2,}? )(THEN.+)}{$1\n$indent4$2}mgo;
+    # Put END AS on its own line
+    s{ +(END AS \w+)}{\n${indent2}$1}go;
+    # Wrap stuff beyond the end properly
+    s{^(\s+END AS \w+,) *(\w)}{$1\n${indent2}$2}mgo;
 
-	## Trim any hanging non-keyword lines from above
-	1 while $_ =~ s{^(${indent2}(?:[a-z]|NULL|\?).{$minwrap1,}?, )(\w.*)}{$1\n$indent2$2}mgo;
+    ## Trim any hanging non-keyword lines from above
+    1 while $_ =~ s{^(${indent2}(?:[a-z]|NULL|\?).{$minwrap1,}?, )(\w.*)}{$1\n$indent2$2}mgo;
 
-	# Wrap if we are doing multiple commands on one line
-	s{;\s*([A-Z])}{\n;\n$1}go;
+    # Wrap if we are doing multiple commands on one line
+    s{;\s*([A-Z])}{\n;\n$1}go;
 
-	## Add in any optional CSS to make the formatting even prettier
-	if ($opt{color}) {
-		## Table aliases and tables:
-		s{((?:FROM|JOIN)\s+(?!position)\w+\s+AS)\s+(\w+)}{$1 <span class="prealias">$2</span>}gos;
-		1 while $_ =~ s{((?:FROM|JOIN)\s+.+?, \w+\s+AS)\s+(\w+)}{$1 <span class="prealias">$2</span>}gos;
-		s{(FROM|JOIN)\s+(?!position)(\w+)}{$1 <span class="pretable">$2</span>}go;
-		1 while $_ =~ s{((?:FROM|JOIN)\s+.+?,) (\w+)}{$1 <span class="pretable">$2</span>}gos;
+    ## Add in any optional CSS to make the formatting even prettier
+    if ($opt{color}) {
+        ## Table aliases and tables:
+        s{((?:FROM|JOIN)\s+(?!position)\w+\s+AS)\s+(\w+)}{$1 <span class="prealias">$2</span>}gos;
+        1 while $_ =~ s{((?:FROM|JOIN)\s+.+?, \w+\s+AS)\s+(\w+)}{$1 <span class="prealias">$2</span>}gos;
+        s{(FROM|JOIN)\s+(?!position)(\w+)}{$1 <span class="pretable">$2</span>}go;
+        1 while $_ =~ s{((?:FROM|JOIN)\s+.+?,) (\w+)}{$1 <span class="pretable">$2</span>}gos;
 
-		## Highlight all keywords
-		s{\b($keywords)\b}{<span class="prekeyword">$1</span>}go;
+        ## Highlight all keywords
+        s{\b($keywords)\b}{<span class="prekeyword">$1</span>}go;
 
-		## Highlight semicolons indicating multiple statements
-		s{\n;\n}{\n<span class="presemi">;</span>\n}go;
+        ## Highlight semicolons indicating multiple statements
+        s{\n;\n}{\n<span class="presemi">;</span>\n}go;
 
-		## Highlight placeholders (question marks)
-		s{(\W)(\?)(\W|\Z)}{$1<span class="prequestion">$2</span>$3}gso;
-	}
+        ## Highlight placeholders (question marks)
+        s{(\W)(\?)(\W|\Z)}{$1<span class="prequestion">$2</span>$3}gso;
+    }
 
     return $_;
 
@@ -1035,18 +1040,18 @@ sub log_meta {
             warn "Checking meta line ($line)\n";
         }
 
-		my $line_regex = qr{FAIL};
-		if ('pid' eq $opt{mode}) {
-			$line_regex = qr{(.{19}) [A-Z]+ \d+ [^ ]+ [^ ]+ (\w+)};
-		}
-		elsif ('syslog' eq $opt{mode}) {
-			$line_regex = qr{(.{19})(?:[+-]\d+:\d+|\s[A-Z]+)\s( \S+ )};
-		}
-		else {
-			die qq{Invalid mode: $opt{mode}\n};
-		}
+        my $line_regex = qr{FAIL};
+        if ('pid' eq $opt{mode}) {
+            $line_regex = qr{(.{19}) [A-Z]+ \d+ [^ ]+ [^ ]+ (\w+)};
+        }
+        elsif ('syslog' eq $opt{mode}) {
+            $line_regex = qr{(.{19})(?:[+-]\d+:\d+|\s[A-Z]+)\s( \S+ )};
+        }
+        else {
+            die qq{Invalid mode: $opt{mode}\n};
+        }
 
-		$line =~ /$line_regex/ms or next;
+        $line =~ /$line_regex/ms or next;
 
         $end = $1; ## no critic
         $host ||= $2; ## no critic
