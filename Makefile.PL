@@ -23,7 +23,6 @@ WriteMakefile(
 	INST_MAN3DIR => 'tmp',
 	INST_LIB     => 'tmp',
     NORECURS     => 1,
-    SIGN         => 1,
     clean        => { FILES => '*~ tmp/* test.pg.log pgsi.html' },
 );
 
