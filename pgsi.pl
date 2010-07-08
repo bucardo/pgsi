@@ -1507,7 +1507,7 @@ Contributions:
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2008-2009 Mark Johnson (mark@endpoint.com)
+Copyright 2008-2010 Mark Johnson (mark@endpoint.com)
 
 This module is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See the LICENSE file.
