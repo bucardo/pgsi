@@ -229,7 +229,10 @@ sub parse_pid_log {
 
         } ## end if valid PID line
 
-        die "Invalid line $.: $line\n";
+		if ($opt{verbose}) {
+			chomp $line;
+			warn "Invalid line $.: $line\n";
+		}
 
     } ## End while
 
