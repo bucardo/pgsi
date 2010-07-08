@@ -174,9 +174,9 @@ sub parse_pid_log {
             next;
         }
 
-        ## TODO: Make this more flexible
         ## Got a valid PID line?
-        if ($line =~ /^(\d\d\d\d\-\d\d\-\d\d \d\d:\d\d:\d\d).+?(\d+)\s+(.+)/o) {
+        if ($line =~ /^(\d\d\d\d\-\d\d\-\d\d \d\d:\d\d:\d\d)\D+(\d+)\s*(.+)/o) {
+
             my ($date,$pid,$more) = ($1,$2,$3);
 
             ## Example:
