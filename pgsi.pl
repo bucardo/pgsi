@@ -463,6 +463,10 @@ span.prequestion { color: red;    font-weight: normal                           
     }
     print qq{</head>\n<body>\n};
 
+    if ($opt{file}) {
+        print qq{<p>Log file: $opt{file}</p>\n};
+    }
+
     print "<ul>\n";
 
     for my $qtype (sort {@{$out->{$b}} <=> @{$out->{$a}} } keys %$out) {
