@@ -860,6 +860,8 @@ sub prettify_query {
             distinct   |
             deferred   |
             show       |
+            grant      |
+            revoke     |
             commit     |
             begin      |
             from       |
