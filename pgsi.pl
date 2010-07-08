@@ -68,8 +68,8 @@ GetOptions ( ## no critic
 ) or die $USAGE;
 
 if ($opt{version}) {
-	print "$0 version $VERSION\n";
-	exit 0;
+    print "$0 version $VERSION\n";
+    exit 0;
 }
 
 ## Prepare formatting vars based on opt{format}
@@ -167,8 +167,8 @@ sub parse_pid_log {
             ## If the last real line was a statement, append this to last PID seen
             if ($lastwaslog) {
                 (my $extra = $1) =~ s/^\s+//;
-				## If a comment, treat carefully
-				$extra =~ s/^(\s*\-\-.+)/$STARTCOMMENT $1 $ENDCOMMENT /;
+                ## If a comment, treat carefully
+                $extra =~ s/^(\s*\-\-.+)/$STARTCOMMENT $1 $ENDCOMMENT /;
                 $logline{$lastpid}{statement} .= " $extra";
             }
             next;
@@ -229,10 +229,10 @@ sub parse_pid_log {
 
         } ## end if valid PID line
 
-		if ($opt{verbose}) {
-			chomp $line;
-			warn "Invalid line $.: $line\n";
-		}
+        if ($opt{verbose}) {
+            chomp $line;
+            warn "Invalid line $.: $line\n";
+        }
 
     } ## End while
 
@@ -417,10 +417,10 @@ for my $hsh (values %canonical_q) {
             : -1
     ;
 
-	## No sense in showing negative numbers unless exactly -1
-	if ($hsh->{sys_impact} < 0 and $hsh->{sys_impact} != -1) {
-		$hsh->{sys_impact} = 0;
-	}
+    ## No sense in showing negative numbers unless exactly -1
+    if ($hsh->{sys_impact} < 0 and $hsh->{sys_impact} != -1) {
+        $hsh->{sys_impact} = 0;
+    }
 
     # Determine standard deviation. If count <= 1,
     # set to -1 to indicate not applicable.
