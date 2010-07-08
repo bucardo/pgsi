@@ -509,7 +509,8 @@ for my $qtype (sort {@{$out->{$b}} <=> @{$out->{$a}} } keys %$out) {
         my $safename = "${host}_$qtype";
         $a1 = qq{<a name="$safename">};
         $a2 = qq{</a>};
-        print $all_fh qq{${fmstartheader2}${a1}Query System Impact : $host : $qtype${a2}${fmendheader2}\n};
+        my $phost = length $host ? qq{ : $host :} : ':';
+        print $all_fh qq{${fmstartheader2}${a1}Query System Impact $phost $qtype${a2}${fmendheader2}\n};
     }
     else {
         print $all_fh qq{Query_System_Impact:$host:$qtype\n};
@@ -849,9 +850,9 @@ sub prettify_query {
     # Perform some basic transformations to try to make the query more readable.
     # It's not perfect, but much better than all one line, all lower case.
 
-	# Hide away any comments so they don't get transformed
-	my @comment;
-	s{($STARTCOMMENT) (.+?) ($ENDCOMMENT)}{push @comment => $2; "$1 comment $3"}ge;
+    # Hide away any comments so they don't get transformed
+    my @comment;
+    s{($STARTCOMMENT) (.+?) ($ENDCOMMENT)}{push @comment => $2; "$1 comment $3"}ge;
 
     my $keywords = qr{
             select     |
@@ -1033,10 +1034,10 @@ sub prettify_query {
         s{(\W)(\?)(\W|\Z)}{$1<span class="prequestion">$2</span>$3}gso;
     }
 
-	# Restore any comments
-	if (@comment) {
-		s{($STARTCOMMENT) comment ($ENDCOMMENT)}{"\n" . (shift @comment) . "\n"}ge;
-	}
+    # Restore any comments
+    if (@comment) {
+        s{($STARTCOMMENT) comment ($ENDCOMMENT)}{"\n" . (shift @comment) . "\n"}ge;
+    }
 
     return $_;
 
@@ -1070,12 +1071,17 @@ sub log_meta {
             die qq{Invalid mode: $opt{mode}\n};
         }
 
-        $line =~ /$line_regex/ms or next;
-
-        $end = $1; ## no critic
-        $host ||= $2; ## no critic
-        $start ||= $end;
-
+        if ($line =~ /$line_regex/ms) {
+            $end = $1; ## no critic
+            $host ||= $2; ## no critic
+            $start ||= $end;
+        }
+        ## Sometimes we don't have a host
+        elsif ($line =~ /(.{19})/) {
+            $end = $1;
+            $host = '';
+            $start ||= $end;
+        }
     }
 
     defined $start or die qq{Unable to find the starting time\n};
@@ -1112,8 +1118,8 @@ sub process_all_queries {
                 $system_impact = sprintf '%0.3f', $hsh->{sys_impact};
             }
 
-			## No sense in showing negative numbers
-			$hsh->{duration} = 0 if $hsh->{duration} < 0;
+            ## No sense in showing negative numbers
+            $hsh->{duration} = 0 if $hsh->{duration} < 0;
 
             my $duration = sprintf '%0.3f ms', $hsh->{duration};
             my $count = $hsh->{count};
