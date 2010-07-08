@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use 5.008003;
 
-my $VERSION = '1.1.1';
+my $VERSION = '1.3.0';
 
 WriteMakefile(
     NAME         => 'pgsi',
