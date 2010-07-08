@@ -20,7 +20,7 @@ use Getopt::Long;
 use IO::Handle;
 use 5.008003;
 
-our $VERSION = '1.2.1';
+our $VERSION = '1.3.0';
 
 *STDOUT->autoflush(1);
 *STDERR->autoflush(1);
