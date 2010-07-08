@@ -198,9 +198,11 @@ sub parse_pid_log {
                 next;
             }
 
-            ## Got a statement? Handle the old one and store the new
-            if ($more =~ /LOG:  statement:\s+(.+)/o) {
-                my $statement = $1;
+            ## Got a statement with optional duration
+            ## Handle the old statement and store the new
+            if ($more =~ /LOG:  (?:duration: (\d+\.\d+) ms  )?statement:\s+(.+)/o) {
+
+                my ($duration,$statement) = ($1,$2);
 
                 ## Slurp in any multi-line continuatiouns after this
                 $lastwaslog = 1;
@@ -217,6 +219,10 @@ sub parse_pid_log {
                     duration  => -1,
                     date      => $date,
                 };
+
+                if (defined $duration) {
+                    $logline{$pid}{duration} = $duration;
+                }
 
                 ## Make sure we have a first and a last line
                 if (not defined $first_line) {
