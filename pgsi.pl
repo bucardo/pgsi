@@ -408,6 +408,11 @@ for my $hsh (values %canonical_q) {
             : -1
     ;
 
+	## No sense in showing negative numbers unless exactly -1
+	if ($hsh->{sys_impact} < 0 and $hsh->{sys_impact} != -1) {
+		$hsh->{sys_impact} = 0;
+	}
+
     # Determine standard deviation. If count <= 1,
     # set to -1 to indicate not applicable.
     if ($hsh->{count} > 1) {
@@ -1092,6 +1097,10 @@ sub process_all_queries {
             else {
                 $system_impact = sprintf '%0.3f', $hsh->{sys_impact};
             }
+
+			## No sense in showing negative numbers
+			$hsh->{duration} = 0 if $hsh->{duration} < 0;
+
             my $duration = sprintf '%0.3f ms', $hsh->{duration};
             my $count = $hsh->{count};
             my $interval;
