@@ -114,6 +114,10 @@ my $indent3 = ' ' x 5;
 ## Even more indenting
 my $indent4 = ' ' x 7;
 
+## Special strings for internal comments
+my $STARTCOMMENT = "startpgsicomment";
+my $ENDCOMMENT = "endpgsicomment";
+
 ## We either read from a file or from stdin
 my $fh;
 if ($opt{file}) {
@@ -163,6 +167,8 @@ sub parse_pid_log {
             ## If the last real line was a statement, append this to last PID seen
             if ($lastwaslog) {
                 (my $extra = $1) =~ s/^\s+//;
+				## If a comment, treat carefully
+				$extra =~ s/^(\s*\-\-.+)/$STARTCOMMENT $1 $ENDCOMMENT /;
                 $logline{$lastpid}{statement} .= " $extra";
             }
             next;
@@ -557,8 +563,7 @@ sub resolve_syslog_stmt {
     # canonize and store.
     my $full_statement = lc (join (' ', @$prev));
 
-    # Get rid of SQL comments
-    #$full_statement =~ s/\s*--.*$//mg;
+    # Handle SQL comments, carefully
     $full_statement =~ s{/[*].*?[*]/}{}msg;
 
     # Tidy up spaces
@@ -678,8 +683,7 @@ sub resolve_pid_statement {
     my $string = lc $info->{statement};
     my $duration = $info->{duration};
 
-    # Get rid of SQL comments, carefully
-    $string =~ s/\s*--(?!.*').*$//mg;
+    # Handle SQL comments, carefully
     $string =~ s{/[*].*?[*]/}{}msg;
 
     ## Lose the final semi-colon
@@ -779,8 +783,6 @@ sub resolve_pid_statement {
         }
     }
 
-    #@$prev = ();
-
     return 1;
 
 } ## end of resolve_pid_statement
@@ -843,6 +845,10 @@ sub prettify_query {
 
     # Perform some basic transformations to try to make the query more readable.
     # It's not perfect, but much better than all one line, all lower case.
+
+	# Hide away any comments so they don't get transformed
+	my @comment;
+	s{($STARTCOMMENT) (.+?) ($ENDCOMMENT)}{push @comment => $2; "$1 comment $3"}ge;
 
     my $keywords = qr{
             select     |
@@ -1023,6 +1029,11 @@ sub prettify_query {
         ## Highlight placeholders (question marks)
         s{(\W)(\?)(\W|\Z)}{$1<span class="prequestion">$2</span>$3}gso;
     }
+
+	# Restore any comments
+	if (@comment) {
+		s{($STARTCOMMENT) comment ($ENDCOMMENT)}{"\n" . (shift @comment) . "\n"}ge;
+	}
 
     return $_;
 
