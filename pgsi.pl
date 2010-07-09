@@ -60,7 +60,7 @@ GetOptions ( ## no critic
         'version',
         'help',
         'verbose+',
-        'file=s',
+        'file|f=s',
         'format=s',
         'mode=s',
         'color!',
