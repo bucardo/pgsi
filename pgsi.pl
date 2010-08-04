@@ -428,7 +428,7 @@ for my $hsh (values %canonical_q) {
         $hsh->{sys_impact} = 0;
     }
 
-    # Determine standard deviation. If count <= 1,
+    # Determine standard deviation and median. If count <= 1,
     # set to -1 to indicate not applicable.
     if ($hsh->{count} > 1) {
         my $sum = 0;
@@ -436,9 +436,12 @@ for my $hsh (values %canonical_q) {
             $sum += ($duration - $mean)**2;
         }
         $hsh->{deviation} = sqrt($sum / ($hsh->{count} - 1));
+        my @sorted = sort { $a <=> $b } @{$hsh->{durations}};
+        $hsh->{median} = $sorted[int($#sorted / 2)];
     }
     else {
         $hsh->{deviation} = -1;
+        $hsh->{median} = -1;
     }
 }
 
@@ -1146,8 +1149,10 @@ sub process_all_queries {
                 $interval = sprintf '%d ms', $hsh->{interval};
             }
             my $deviation = sprintf '%0.3f ms', $hsh->{deviation};
+            my $median = sprintf '%0.3f ms', $hsh->{median};
             if ($count == 1) {
                 $deviation = 'N/A';
+                $median = 'N/A';
             }
 
             my $arr =
@@ -1196,6 +1201,7 @@ sub process_all_queries {
 <td align="right">
 ${fmstartbold}System Impact:$fmendbold<br />
 Avg. Duration:<br />
+Median Duration:<br />
 Total Count:<br />
 Avg. Interval:<br />
 Std. Deviation:
@@ -1203,6 +1209,7 @@ Std. Deviation:
 <td>
 $fmstartbold$system_impact$fmendbold<br />
 $duration<br />
+$median<br />
 $count<br />
 $interval<br />
 $deviation
