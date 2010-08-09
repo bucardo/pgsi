@@ -182,9 +182,6 @@ sub parse_pid_log {
             ## Example:
             ## 2009-12-03 08:12:05 PST 11717 4b17e355.2dc5 127.0.0.1 dbuser dbname LOG:  statement: SELECT ...
 
-            ## Make sure any subsequent multi-line statements know where to go
-            $lastpid = $pid;
-
             ## Reset the last log indicator
             $lastwaslog = 0;
 
@@ -206,6 +203,9 @@ sub parse_pid_log {
 
                 ## Slurp in any multi-line continuatiouns after this
                 $lastwaslog = 1;
+
+                ## Make sure any subsequent multi-line statements know where to go
+                $lastpid = $pid;
 
                 ## If this PID has something stored, process it first
                 if (exists $logline{$pid}) {
