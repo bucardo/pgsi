@@ -20,7 +20,7 @@ use Getopt::Long;
 use IO::Handle;
 use 5.008003;
 
-our $VERSION = '1.3.0';
+our $VERSION = '1.4.0';
 
 *STDOUT->autoflush(1);
 *STDERR->autoflush(1);
@@ -1584,6 +1584,7 @@ Contributions:
     Ethan Rowe (ethan@endpoint.com), End Point Corp.
     Greg Sabino Mullane (greg@endpoint.com), End Point Corp.
     Daniel Browning (db@endpoint.com), End Point Corp.
+    Joshua Tolley <josh@endpoint.com>, End Point Corp.
 
 =head1 LICENSE AND COPYRIGHT
 
