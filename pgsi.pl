@@ -182,9 +182,6 @@ sub parse_pid_log {
             ## Example:
             ## 2009-12-03 08:12:05 PST 11717 4b17e355.2dc5 127.0.0.1 dbuser dbname LOG:  statement: SELECT ...
 
-            ## Make sure any subsequent multi-line statements know where to go
-            $lastpid = $pid;
-
             ## Reset the last log indicator
             $lastwaslog = 0;
 
@@ -206,6 +203,9 @@ sub parse_pid_log {
 
                 ## Slurp in any multi-line continuatiouns after this
                 $lastwaslog = 1;
+
+                ## Make sure any subsequent multi-line statements know where to go
+                $lastpid = $pid;
 
                 ## If this PID has something stored, process it first
                 if (exists $logline{$pid}) {
@@ -320,9 +320,8 @@ sub parse_syslog_log {
     # entry after a query finishes.
     $extract_duration_re =
     qr{
-        \A
         log:
-        \s
+        \s+
         duration:
         \s
         (
@@ -330,7 +329,7 @@ sub parse_syslog_log {
             [.]
             \d{3}
         )
-    }xms;
+    }ixms;
 
     while (my $line = <$fh>) {
 
@@ -356,9 +355,9 @@ sub parse_syslog_log {
         # they're encountered.
         if (defined $line) {
             $first_line = $line
-                if $line lt $first_line;
+                if get_timelocal_from_line($line) < get_timelocal_from_line($first_line);
             $last_line = $line
-                if $line gt $last_line;
+                if get_timelocal_from_line($line) > get_timelocal_from_line($first_line);
         }
 
         my $arr;
@@ -428,7 +427,7 @@ for my $hsh (values %canonical_q) {
         $hsh->{sys_impact} = 0;
     }
 
-    # Determine standard deviation. If count <= 1,
+    # Determine standard deviation and median. If count <= 1,
     # set to -1 to indicate not applicable.
     if ($hsh->{count} > 1) {
         my $sum = 0;
@@ -436,9 +435,12 @@ for my $hsh (values %canonical_q) {
             $sum += ($duration - $mean)**2;
         }
         $hsh->{deviation} = sqrt($sum / ($hsh->{count} - 1));
+        my @sorted = sort { $a <=> $b } @{$hsh->{durations}};
+        $hsh->{median} = $sorted[int($#sorted / 2)];
     }
     else {
         $hsh->{deviation} = -1;
+        $hsh->{median} = -1;
     }
 }
 
@@ -625,7 +627,7 @@ sub resolve_syslog_stmt {
         $query{$pid}{statement} = $main_query;
         $query{$pid}{qtype} = "\U$query_type";
     }
-    elsif (
+    if (
             exists $query{$pid}{statement}
             &&
             $full_statement =~ $extract_duration_re
@@ -682,6 +684,7 @@ sub resolve_syslog_stmt {
     }
 
     @$prev = ();
+    $resolve_called++;
 
     return 1;
 
@@ -806,6 +809,7 @@ sub resolve_pid_statement {
 # and second arg as log entry of latest time
 sub log_interval {
     my ($first_line, $second_line) = @_;
+    $opt{verbose} and print "First and second lines:\n\t$first_line\n\t$second_line\n";
 
     my $first_timelocal = get_timelocal_from_line($first_line);
     my $second_timelocal = get_timelocal_from_line($second_line);
@@ -832,23 +836,54 @@ sub get_timelocal_from_line {
 sub get_date_from_line {
     my ($line) = @_;
 
-    my ($year, $mon, $day, $hour, $min, $sec) =
-        $line =~ m{
-        (\d{4})
-        -
-        (\d{1,2})
-        -
-        (\d{1,2})
-        [T ]
-        0?
-        (\d{1,2})
-        :
-        0?
-        (\d{1,2})
-        :
-        0?
-        (\d{1,2})
-    }x;
+    my ($year, $mon, $day, $hour, $min, $sec);
+    if ($line =~ m/^\d{4}/) {
+        ($year, $mon, $day, $hour, $min, $sec) =
+            $line =~ m{
+            (\d{4})
+            -
+            (\d{1,2})
+            -
+            (\d{1,2})
+            [T ]
+            0?
+            (\d{1,2})
+            :
+            0?
+            (\d{1,2})
+            :
+            0?
+            (\d{1,2})
+        }x;
+    }
+    else {
+        my @localtime = localtime(time);
+        $year = $localtime[5] + 1900 ;
+        my $mon_name;
+        ($mon_name, $day, $hour, $min, $sec) =
+            $line =~ m{
+                ^(\w{3})   \s+
+                (\d{1,2})  \s
+                (\d\d)     :
+                (\d\d)     :
+                (\d\d)
+            }x;
+        my %months = (
+            Jan => '01',
+            Feb => '02',
+            Mar => '03',
+            Apr => '04',
+            May => '05',
+            Jun => '06',
+            Jul => '07',
+            Aug => '08',
+            Sep => '09',
+            Oct => '10',
+            Nov => '11',
+            Dec => '12'
+        );
+        $mon = $months{$mon_name};
+    }
 
     return ($year, $mon, $day, $hour, $min, $sec);
 }
@@ -1146,8 +1181,10 @@ sub process_all_queries {
                 $interval = sprintf '%d ms', $hsh->{interval};
             }
             my $deviation = sprintf '%0.3f ms', $hsh->{deviation};
+            my $median = sprintf '%0.3f ms', $hsh->{median};
             if ($count == 1) {
                 $deviation = 'N/A';
+                $median = 'N/A';
             }
 
             my $arr =
@@ -1196,6 +1233,7 @@ sub process_all_queries {
 <td align="right">
 ${fmstartbold}System Impact:$fmendbold<br />
 Avg. Duration:<br />
+Median Duration:<br />
 Total Count:<br />
 Avg. Interval:<br />
 Std. Deviation:
@@ -1203,6 +1241,7 @@ Std. Deviation:
 <td>
 $fmstartbold$system_impact$fmendbold<br />
 $duration<br />
+$median<br />
 $count<br />
 $interval<br />
 $deviation
@@ -1265,12 +1304,12 @@ sub PG_8_2 {
     # entries in 8.2. Works for v's 8.2 and 8.3.
 
     return qr{
-        \A
         log:
-        \s
+        \s+
+        (?:duration: .*)?
         (
             statement |
-            execute
+            execute (?: \s <.*> )
         )
         [^:]* :
         \s
@@ -1278,7 +1317,7 @@ sub PG_8_2 {
             ($query_types)
             .*
         )
-    }xms;
+    }ixms;
 }
 
 sub PG_8_1::query_info {
