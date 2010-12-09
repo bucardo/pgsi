@@ -1,6 +1,6 @@
 Changes for the Postgres System Impact program pgsi.pl
 
-Version 1.4.0
+Version 1.4.0 - released December 9, 2010
 
  - Support for alternate syslog format
 
