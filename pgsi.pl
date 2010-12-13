@@ -477,7 +477,11 @@ span.prequestion { color: red;    font-weight: normal                           
 
     print "<ul>\n";
 
-    for my $qtype (sort {@{$out->{$b}} <=> @{$out->{$a}} } keys %$out) {
+    for my $qtype (
+				   map  { $_->[0] }
+				   sort { $a->[1] <=> $b->[1] or $b->[2] <=> $a->[2] }
+				   map  { [$_, ($_ eq 'COPY' ? 1 : 0), scalar @{$out->{$_}} ] }
+				   keys %$out) {
 
         my $count = @{$out->{$qtype}};
 
@@ -487,7 +491,11 @@ span.prequestion { color: red;    font-weight: normal                           
     print "</ul>\n";
 }
 
-for my $qtype (sort {@{$out->{$b}} <=> @{$out->{$a}} } keys %$out) {
+for my $qtype (
+			   map  { $_->[0] }
+			   sort { $a->[1] <=> $b->[1] or $b->[2] <=> $a->[2] }
+			   map  { [$_, ($_ eq 'COPY' ? 1 : 0), scalar @{$out->{$_}} ] }
+			   keys %$out) {
 
     my $arr = $out->{$qtype};
 
