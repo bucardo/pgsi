@@ -1,8 +1,14 @@
 Changes for the Postgres System Impact program pgsi.pl
 
-Version xxx
+Version 1.5.0
+
+ - Allow for multiple files to be parsed by multiple --file= calls.
 
  - Always put COPY last
+
+ - Reduce the number of decimal places to two from three.
+
+ - Rename "Avg" to "Mean"
 
 Version 1.4.0 - released December 9, 2010
 
