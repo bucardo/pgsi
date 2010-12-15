@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name                : pgsi
-version             : 1.4.0
+version             : 1.5.0
 abstract            : Postgres system impact report
 author:              
   - Mark Johnson <mark@endpoint.com>
@@ -19,7 +19,7 @@ build_requires:
 provides:
   pgsi:
     file            : pgsi.pl
-    version         : 1.4.0
+    version         : 1.5.0
 
 resources:
   homepage          : http://bucardo.org/pgsi/index.html
