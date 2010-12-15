@@ -409,7 +409,7 @@ for my $hsh (values %canonical_q) {
     # Mean runtime.
     my $mean = $hsh->{duration} /= $hsh->{count};
 
-    # Avg time between successive calls.
+    # Average (mean) time between successive calls.
     $hsh->{interval} = $log_int_ms / $hsh->{count};
 
     # SI, expressed as a percent. 100 implies the query
@@ -1240,10 +1240,10 @@ sub process_all_queries {
 <tr>
 <td align="right">
 ${fmstartbold}System Impact:$fmendbold<br />
-Avg. Duration:<br />
+Mean Duration:<br />
 Median Duration:<br />
 Total Count:<br />
-Avg. Interval:<br />
+Mean Interval:<br />
 Std. Deviation:
 </td>
 <td>
