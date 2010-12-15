@@ -21,7 +21,7 @@ use Getopt::Long;
 use IO::Handle;
 use 5.008003;
 
-our $VERSION = '1.5.0';
+our $VERSION = '1.5.1';
 
 *STDOUT->autoflush(1);
 *STDERR->autoflush(1);
@@ -46,6 +46,7 @@ my %opt = (
     'format'      => 'html',
     'mode'        => 'pid',
     'color'       => 1,
+    'quiet'       => 0,
 );
 
 my $USAGE = qq{Usage: $0 -f filename [options]\n};
@@ -65,6 +66,7 @@ GetOptions ( ## no critic
         'format=s',
         'mode=s',
         'color!',
+        'quiet',
     )
 ) or die $USAGE;
 
@@ -582,9 +584,9 @@ if ($opt{format} eq 'html') {
     print "</body></html>\n";
 }
 
-close $fh or warn qq{Could not close file: $!\n};
-
-warn "Items processed: $resolve_called\n";
+if (! $opt{quiet}) {
+    warn "Items processed: $resolve_called\n";
+}
 
 exit;
 
