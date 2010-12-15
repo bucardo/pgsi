@@ -1170,26 +1170,26 @@ sub process_all_queries {
                 $system_impact = sprintf '%0.6f', $hsh->{sys_impact};
             }
             else {
-                $system_impact = sprintf '%0.3f', $hsh->{sys_impact};
+                $system_impact = sprintf '%0.2f', $hsh->{sys_impact};
             }
 
             ## No sense in showing negative numbers
             $hsh->{duration} = 0 if $hsh->{duration} < 0;
 
-            my $duration = sprintf '%0.3f ms', $hsh->{duration};
+            my $duration = sprintf '%0.2f ms', $hsh->{duration};
             my $count = $hsh->{count};
             my $interval;
             if ($hsh->{interval} > 10000) {
                 $interval = sprintf '%d seconds', $hsh->{interval}/1000;
             }
             elsif ($hsh->{interval} < 1000) {
-                $interval = sprintf '%0.3f ms', $hsh->{interval};
+                $interval = sprintf '%0.2f ms', $hsh->{interval};
             }
             else {
                 $interval = sprintf '%d ms', $hsh->{interval};
             }
-            my $deviation = sprintf '%0.3f ms', $hsh->{deviation};
-            my $median = sprintf '%0.3f ms', $hsh->{median};
+            my $deviation = sprintf '%0.2f ms', $hsh->{deviation};
+            my $median = sprintf '%0.2f ms', $hsh->{median};
             if ($count == 1) {
                 $deviation = 'N/A';
                 $median = 'N/A';
