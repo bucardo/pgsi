@@ -14,7 +14,7 @@ Version 1.4.0 - released December 9, 2010
 
  - Support for alternate syslog format
 
- - Fix bug when last processe line was not a STATEMENT
+ - Fix bug when last process line was not a STATEMENT
 
  - Add median
 
