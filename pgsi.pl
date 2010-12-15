@@ -1,4 +1,5 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
+# -*-mode:cperl; indent-tabs-mode: nil-*-
 
 ## Parse Postgres logs and determine the system impact
 ##
@@ -121,32 +122,32 @@ my $ENDCOMMENT = "endpgsicomment";
 ## We either read from a file or from stdin
 my (@fh, $fh);
 if ($opt{file}) {
-	my $x = 0;
-	my %dupe;
-	for my $file (@{$opt{file}}) {
-		if ($dupe{$file}++) {
-			die "File specified more than once: $file\n";
-		}
-		open $fh[$x], '<', $file or die qq{Could not open "$file": $!\n};
-		$x++;
-	}
+    my $x = 0;
+    my %dupe;
+    for my $file (@{$opt{file}}) {
+        if ($dupe{$file}++) {
+            die "File specified more than once: $file\n";
+        }
+        open $fh[$x], '<', $file or die qq{Could not open "$file": $!\n};
+        $x++;
+    }
 }
 else {
     push @fh => \*STDIN;
 }
 
 for (@fh) {
-	$fh = $_;
-	## Do the actual parsing. Depends on what kind of log file we have
-	if ('pid' eq $opt{mode}) {
-		parse_pid_log();
-	}
-	elsif ('syslog' eq $opt{mode}) {
-		parse_syslog_log();
-	}
-	else {
-		die qq{Unknown mode: $opt{mode}\n};
-	}
+    $fh = $_;
+    ## Do the actual parsing. Depends on what kind of log file we have
+    if ('pid' eq $opt{mode}) {
+        parse_pid_log();
+    }
+    elsif ('syslog' eq $opt{mode}) {
+        parse_syslog_log();
+    }
+    else {
+        die qq{Unknown mode: $opt{mode}\n};
+    }
 }
 
 sub parse_pid_log {
@@ -483,25 +484,25 @@ span.prequestion { color: red;    font-weight: normal                           
     print qq{</head>\n<body>\n};
 
     if ($opt{file}) {
-		if (! defined $opt{file}[1]) {
-			print qq{<p>Log file: $opt{file}[0]</p>\n};
-		}
-		else {
-			print qq{<p>Log files:<ul>\n};
-			for my $file (@{$opt{file}}) {
-				print qq{<li>$file</li>\n};
-			}
-			print qq{</ul></p>\n};
-		}
+        if (! defined $opt{file}[1]) {
+            print qq{<p>Log file: $opt{file}[0]</p>\n};
+        }
+        else {
+            print qq{<p>Log files:<ul>\n};
+            for my $file (@{$opt{file}}) {
+                print qq{<li>$file</li>\n};
+            }
+            print qq{</ul></p>\n};
+        }
     }
 
     print "<ul>\n";
 
     for my $qtype (
-				   map  { $_->[0] }
-				   sort { $a->[1] <=> $b->[1] or $b->[2] <=> $a->[2] }
-				   map  { [$_, ($_ eq 'COPY' ? 1 : 0), scalar @{$out->{$_}} ] }
-				   keys %$out) {
+                   map  { $_->[0] }
+                   sort { $a->[1] <=> $b->[1] or $b->[2] <=> $a->[2] }
+                   map  { [$_, ($_ eq 'COPY' ? 1 : 0), scalar @{$out->{$_}} ] }
+                   keys %$out) {
 
         my $count = @{$out->{$qtype}};
 
@@ -512,10 +513,10 @@ span.prequestion { color: red;    font-weight: normal                           
 }
 
 for my $qtype (
-			   map  { $_->[0] }
-			   sort { $a->[1] <=> $b->[1] or $b->[2] <=> $a->[2] }
-			   map  { [$_, ($_ eq 'COPY' ? 1 : 0), scalar @{$out->{$_}} ] }
-			   keys %$out) {
+               map  { $_->[0] }
+               sort { $a->[1] <=> $b->[1] or $b->[2] <=> $a->[2] }
+               map  { [$_, ($_ eq 'COPY' ? 1 : 0), scalar @{$out->{$_}} ] }
+               keys %$out) {
 
     my $arr = $out->{$qtype};
 
