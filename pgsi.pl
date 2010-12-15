@@ -60,7 +60,7 @@ GetOptions ( ## no critic
         'version',
         'help',
         'verbose+',
-        'file|f=s',
+        'file|f=s@',
         'format=s',
         'mode=s',
         'color!',
@@ -119,23 +119,34 @@ my $STARTCOMMENT = "startpgsicomment";
 my $ENDCOMMENT = "endpgsicomment";
 
 ## We either read from a file or from stdin
-my $fh;
+my (@fh, $fh);
 if ($opt{file}) {
-    open $fh, '<', $opt{file} or die qq{Could not open "$opt{file}": $!\n};
+	my $x = 0;
+	my %dupe;
+	for my $file (@{$opt{file}}) {
+		if ($dupe{$file}++) {
+			die "File specified more than once: $file\n";
+		}
+		open $fh[$x], '<', $file or die qq{Could not open "$file": $!\n};
+		$x++;
+	}
 }
 else {
-    $fh = \*STDIN;
+    push @fh => \*STDIN;
 }
 
-## Do the actual parsing. Depends on what kind of log file we have
-if ('pid' eq $opt{mode}) {
-    parse_pid_log();
-}
-elsif ('syslog' eq $opt{mode}) {
-    parse_syslog_log();
-}
-else {
-    die qq{Unknown mode: $opt{mode}\n};
+for (@fh) {
+	$fh = $_;
+	## Do the actual parsing. Depends on what kind of log file we have
+	if ('pid' eq $opt{mode}) {
+		parse_pid_log();
+	}
+	elsif ('syslog' eq $opt{mode}) {
+		parse_syslog_log();
+	}
+	else {
+		die qq{Unknown mode: $opt{mode}\n};
+	}
 }
 
 sub parse_pid_log {
@@ -472,7 +483,16 @@ span.prequestion { color: red;    font-weight: normal                           
     print qq{</head>\n<body>\n};
 
     if ($opt{file}) {
-        print qq{<p>Log file: $opt{file}</p>\n};
+		if (! defined $opt{file}[1]) {
+			print qq{<p>Log file: $opt{file}[0]</p>\n};
+		}
+		else {
+			print qq{<p>Log files:<ul>\n};
+			for my $file (@{$opt{file}}) {
+				print qq{<li>$file</li>\n};
+			}
+			print qq{</ul></p>\n};
+		}
     }
 
     print "<ul>\n";
@@ -561,7 +581,7 @@ if ($opt{format} eq 'html') {
     print "</body></html>\n";
 }
 
-close $fh or warn qq{Could not close "$opt{file}": $!\n};
+close $fh or warn qq{Could not close file: $!\n};
 
 warn "Items processed: $resolve_called\n";
 
@@ -1373,7 +1393,7 @@ pgsi.pl - Produce system impact reports for a PostgreSQL database.
 
 =head1 VERSION
 
-This documentation refers to version 1.2.0
+This documentation refers to version 1.4.1
 
 =head1 USAGE
 
@@ -1457,6 +1477,12 @@ Pass in log data on stdin:
 Or use the --file option:
 
     pgsi.pl --file=some_log_slice.log
+
+Or read in more than one file at a time:
+
+    pgsi.pl --file=logfile1.log --file=logfile2.log
+
+If more than one file is given, they must be given in chronological order.
 
 Log data must comply with a specific format and must be from contiguous
 activity. The code makes the assumption that the overall interval of activity
