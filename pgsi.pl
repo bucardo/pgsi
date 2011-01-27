@@ -147,10 +147,90 @@ for (@fh) {
     elsif ('syslog' eq $opt{mode}) {
         parse_syslog_log();
     }
+    elsif ('csv' eq $opt{mode}) {
+        parse_csv_log();
+    }
     else {
         die qq{Unknown mode: $opt{mode}\n};
     }
 }
+
+sub parse_csv_log {
+
+    ## Each line of interest, with PIDs as the keys
+    my %logline;
+
+    ## The last PID we saw. Used to populate multi-line statements correctly.
+    my $lastpid = 0;
+
+    require Text::CSV_XS;
+    my $csv = Text::CSV_XS->new({ binary => 1 }) or die;
+    $csv->column_names(qw(log_time user_name database_name process_id connection_from session_id session_line_num command_tag session_start_time virtual_transaction_id transaction_id error_severity sql_state_code message detail hint internal_query internal_query_pos context query query_pos location application_name));
+    while(my $line = $csv->getline_hr($fh)) {
+
+        if ($opt{verbose} >= 2) {
+            warn "Checking line (" . Dumper($line) . ")\n";
+        }
+
+        my $date = $line->{log_time};
+        my $pid = $line->{process_id};
+        my $more = $line->{message};
+
+        ## All we care about is statements and durations
+
+        ## Got a duration? Store it for this PID and move on
+        if ($more =~ /duration: (\d+\.\d+) ms$/o) {
+            my $duration = $1;
+            ## Store this duration, overwriting what is (presumably) -1
+            $logline{$pid}{duration} = $duration;
+            next;
+        }
+
+        ## Got a statement with optional duration
+        ## Handle the old statement and store the new
+        if ($more =~ /(?:duration: (\d+\.\d+) ms  )?statement:\s+(.+)/o) {
+
+            my ($duration,$statement) = ($1,$2);
+
+            ## Make sure any subsequent multi-line statements know where to go
+            $lastpid = $pid;
+
+            ## If this PID has something stored, process it first
+            if (exists $logline{$pid}) {
+                 resolve_pid_statement($logline{$pid});
+            }
+
+            ## Store and blow away any old value
+            $logline{$pid} = {
+                line      => $line,
+                statement => $statement,
+                duration  => -1,
+                date      => $date,
+            };
+
+            if (defined $duration) {
+                $logline{$pid}{duration} = $duration;
+            }
+
+            ## Make sure we have a first and a last line
+            if (not defined $first_line) {
+                $first_line = $last_line = $line;
+            }
+
+        } ## end LOG: statement
+    } ## End while
+
+    defined $first_line or die qq{Could not find any matching lines: incorrect format??\n};
+
+    ## Process any PIDS that are left
+    for my $pid (keys %logline) {
+        resolve_pid_statement($logline{$pid});
+    }
+
+    ## Store the last PID seen as the last line
+    $last_line = $logline{$lastpid}{line};
+} ## end of parse_pid_log
+
 
 sub parse_pid_log {
 
@@ -1144,6 +1224,12 @@ sub log_meta {
         }
         elsif ('syslog' eq $opt{mode}) {
             $line_regex = qr{(.{19})(?:[+-]\d+:\d+|\s[A-Z]+)\s( \S+ )};
+        }
+        elsif ('csv' eq $opt{mode}) {
+            $host = $line->{connection_from};
+            $end = $line->{log_time};
+            $start ||= $end;
+            return ($host, $start, $end);
         }
         else {
             die qq{Invalid mode: $opt{mode}\n};
