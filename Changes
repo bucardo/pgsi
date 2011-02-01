@@ -1,6 +1,14 @@
 Changes for the Postgres System Impact program pgsi.pl
 
-Version 1.5.0
+
+Version 1.6.0, released January 31, 2011
+
+  - Add in 'csv' as a valid mode (Abraham Ingersoll)
+
+  - Add 'quiet' option (Greg Sabino Mullane)
+
+
+Version 1.5.0, released December 15, 2010
 
  - Allow for multiple files to be parsed by multiple --file= calls.
 
@@ -10,7 +18,8 @@ Version 1.5.0
 
  - Rename "Avg" to "Mean"
 
-Version 1.4.0 - released December 9, 2010
+
+Version 1.4.0, released December 9, 2010
 
  - Support for alternate syslog format
 
@@ -18,7 +27,8 @@ Version 1.4.0 - released December 9, 2010
 
  - Add median
 
-Version 1.3.0 - released July 9, 2010
+
+Version 1.3.0, released July 9, 2010
 
  - Handle lines with both duration and statement
 
@@ -32,12 +42,14 @@ Version 1.3.0 - released July 9, 2010
 
  - Do not show negative system impact values or negative durations
 
-Version 1.2.0 - released January 2, 2010
+
+Version 1.2.0, released January 2, 2010
 
  - Major code cleanup, add HTML mode
 
  - Much more formatting of results, with CSS colorings
 
-Version 1.1.1 - released January 2009  
+
+Version 1.1.1, released January 2009
 
 - First public release
