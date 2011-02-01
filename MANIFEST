@@ -10,6 +10,7 @@ META.yml
 SIGNATURE
 .perlcriticrc
 .gitignore
+t/00_release.t
 t/00_basic.t
 t/00_signature.t
 t/02_pgsi.t
