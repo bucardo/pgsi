@@ -131,6 +131,7 @@ __DATA__
 Backcountry
 backend
 conf
+cperl
 cwd
 env
 http
@@ -158,3 +159,25 @@ wiki
 YAML
 YAMLiciousness
 yml
+
+## pgsi.pl
+
+arg
+csv
+Globals
+html
+Ingersoll
+pid
+refactor
+syslog
+Tolley
+
+## README
+
+bucardo
+
+## Changes
+
+CSS
+filename
+regexes

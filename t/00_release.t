@@ -126,10 +126,10 @@ sub file_is_clean {
     close $fh or warn qq{Could not close "$file": $!\n};
 
     if ($good) {
-        pass "The $file file has no tabs or unusual characters";
+        pass ("The $file file has no tabs or unusual characters");
     }
     else {
-        fail "The $file file did not pass inspection!";
+        fail ("The $file file did not pass inspection!");
     }
 
 }
