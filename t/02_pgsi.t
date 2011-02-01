@@ -65,7 +65,7 @@ close $fh or die qq{Could not close "$file": $!\n};
 
 my $pidfile = "$testdir/postmaster.pid";
 my $startup = 1;
-my $logfile = POSIX::strftime("$testdir/$fn", localtime);
+my $logfile = POSIX::strftime("$testdir/$fn", localtime); ## no critic
 if (-e $pidfile) {
     open my $fh, '<', $pidfile or die qq{Could not open "$pidfile": $!\n};
     <$fh> =~ /(\d+)/ or die qq{No PID found in file "$pidfile"\n};

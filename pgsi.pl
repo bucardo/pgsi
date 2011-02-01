@@ -14,9 +14,9 @@ package PGSI;
 
 use strict;
 use warnings;
-use Data::Dumper;
+use Data::Dumper qw( Dumper );
 
-use Time::Local qw();
+use Time::Local  qw();
 use Getopt::Long;
 use IO::Handle;
 use 5.008003;
@@ -232,6 +232,8 @@ sub parse_csv_log {
     ## Store the last PID seen as the last line
     $last_line = $logline{$lastpid}{line};
 
+    return;
+
 } ## end of parse_csv_log
 
 
@@ -348,6 +350,8 @@ sub parse_pid_log {
 
     ## Store the last PID seen as the last line
     $last_line = $logline{$lastpid}{line};
+
+    return;
 
 } ## end of parse_pid_log
 
@@ -490,6 +494,8 @@ sub parse_syslog_log {
         next unless exists $hsh->{fragments} and @{ $hsh->{fragments} };
         resolve_syslog_stmt($pid);
     }
+
+    return;
 
 } ## end of parse_syslog_log
 
@@ -855,7 +861,7 @@ sub resolve_pid_statement {
             }
             { in (?+)}xmsg;
 
-    $main_query =~ s/^begin;//io unless $main_query =~ m{^begin;$};
+    $main_query =~ s/^begin;//io unless $main_query =~ m{^begin;$}; ## no critic
 
     return 0 if $main_query !~ /\w/; ## e.g. a single ;
 
@@ -922,11 +928,11 @@ sub resolve_pid_statement {
 # Expects first arg as log entry of earliest time
 # and second arg as log entry of latest time
 sub log_interval {
-    my ($first_line, $second_line) = @_;
-    $opt{verbose} and print "First and second lines:\n\t$first_line\n\t$second_line\n";
+    my ($first, $second) = @_;
+    $opt{verbose} and print "First and second lines:\n\t$first\n\t$second\n";
 
-    my $first_timelocal = get_timelocal_from_line($first_line);
-    my $second_timelocal = get_timelocal_from_line($second_line);
+    my $first_timelocal = get_timelocal_from_line($first);
+    my $second_timelocal = get_timelocal_from_line($second);
     my $interval_in_sec = $second_timelocal - $first_timelocal;
 
     # Full log-slice interval in ms
@@ -994,7 +1000,7 @@ sub get_date_from_line {
             Sep => '09',
             Oct => '10',
             Nov => '11',
-            Dec => '12'
+            Dec => '12',
         );
         $mon = $months{$mon_name};
     }
@@ -1209,7 +1215,7 @@ sub log_meta {
 
     my @lines = @_;
 
-    my ($host, $start, $end);
+    my ($hostname, $start, $end);
 
     # Pull out host, start time, and end time.
     # Assumes start as first arg and end as second.
@@ -1229,24 +1235,24 @@ sub log_meta {
             $line_regex = qr{(.{19})(?:[+-]\d+:\d+|\s[A-Z]+)\s( \S+ )};
         }
         elsif ('csv' eq $opt{mode}) {
-            $host = $line->{connection_from};
+            $hostname = $line->{connection_from};
             $end = $line->{log_time};
             $start ||= $end;
-            return ($host, $start, $end);
+            return ($hostname, $start, $end);
         }
         else {
             die qq{Invalid mode: $opt{mode}\n};
         }
 
-        if ($line =~ /$line_regex/ms) {
+        if ($line =~ /$line_regex/ms) { ## no critic
             $end = $1; ## no critic
-            $host ||= $2; ## no critic
+            $hostname ||= $2; ## no critic
             $start ||= $end;
         }
         ## Sometimes we don't have a host
         elsif ($line =~ /(.{19})/) {
             $end = $1;
-            $host = '';
+            $hostname = '';
             $start ||= $end;
         }
     }
@@ -1255,7 +1261,7 @@ sub log_meta {
 
     defined $end or die qq{Unable to find the ending time\n};
 
-    return ($host, $start, $end);
+    return ($hostname, $start, $end);
 
 } ## end of log_meta
 

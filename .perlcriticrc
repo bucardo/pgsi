@@ -46,10 +46,14 @@ severity = 1
 
 [-Miscellanea::ProhibitTies]
 [-Miscellanea::RequireRcsKeywords]
+[-Miscellanea::ProhibitUnrestrictedNoCritic]
 
 [-Modules::PerlMinimumVersion]
 [-Modules::ProhibitExcessMainComplexity]
 [-Modules::RequireFilenameMatchesPackage]
+
+[-NamingConventions::ProhibitAmbiguousNames]
+[-NamingConventions::Capitalization]
 
 [-References::ProhibitDoubleSigils]
 
@@ -59,6 +63,7 @@ severity = 1
 [-RegularExpressions::ProhibitEscapedMetacharacters]
 [-RegularExpressions::RequireExtendedFormatting]
 [-RegularExpressions::RequireLineBoundaryMatching]
+[-RegularExpressions::RequireDotMatchAnything]
 
 [-Subroutines::ProhibitQualifiedSubDeclarations]
 [-Subroutines::RequireArgUnpacking]

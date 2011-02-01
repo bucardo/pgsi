@@ -42,11 +42,12 @@ while (<DATA>) {
 
 
 sub spellcheck {
-    my ($desc, $text, $file) = @_;
+
+    my ($desc, $text, $filename) = @_;
     my $check = Text::SpellChecker->new(text => $text);
     my %badword;
     while (my $word = $check->next_word) {
-        next if $okword{Common}{$word} or $okword{$file}{$word};
+        next if $okword{Common}{$word} or $okword{$filename}{$word};
         $badword{$word}++;
     }
     my $count = keys %badword;

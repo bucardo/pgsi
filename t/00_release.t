@@ -95,14 +95,12 @@ for my $mfile (@mfiles) {
     file_is_clean($mfile);
 }
 
-exit;
-
 sub file_is_clean {
 
-    my $file = shift or die;
+    my $filename = shift or die;
 
-    if (!open $fh, '<', $file) {
-        fail qq{Could not open "$file": $!\n};
+    if (!open $fh, '<', $filename) {
+        fail qq{Could not open "$filename": $!\n};
         return;
     }
     $good = 1;
@@ -114,22 +112,22 @@ sub file_is_clean {
         if (/^\\./ and $inside_copy) {
             $inside_copy = 0;
         }
-        if (/\t/ and $file ne 'Makefile.PL' and $file !~ /\.html$/ and ! $inside_copy) {
-            diag "Found a tab at line $. of $file\n";
+        if (/\t/ and $filename ne 'Makefile.PL' and $filename !~ /\.html$/ and ! $inside_copy) {
+            diag "Found a tab at line $. of $filename\n";
             $good = 0;
         }
         if (! /^[\S ]*/) {
-            diag "Invalid character at line $. of $file: $_\n";
+            diag "Invalid character at line $. of $filename: $_\n";
             $good = 0; die;
         }
     }
-    close $fh or warn qq{Could not close "$file": $!\n};
+    close $fh or warn qq{Could not close "$filename": $!\n};
 
     if ($good) {
-        pass ("The $file file has no tabs or unusual characters");
+        pass ("The $filename file has no tabs or unusual characters");
     }
     else {
-        fail ("The $file file did not pass inspection!");
+        fail ("The $filename file did not pass inspection!");
     }
 
 }
