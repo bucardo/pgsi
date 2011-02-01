@@ -48,17 +48,21 @@ close $fh or warn qq{Could not close "$file": $!\n};
 $file = 'pgsi.pl';
 open $fh, '<', $file or die qq{Could not open "$file": $!\n};
 while (<$fh>) {
-    push @{$v{$file}} => [$1,$.] if (/VERSION = qv\('$vre'/ or /documents version $vre/);
+    push @{$v{$file}} => [$1,$.] if (/VERSION = '$vre'/ or /refers to version $vre/);
+}
+close $fh or warn qq{Could not close "$file": $!\n};
+
+$file = 'pgsi.html';
+open $fh, '<', $file or die qq{Could not open "$file": $!\n};
+while (<$fh>) {
+    push @{$v{$file}} => [$1,$.] if /version $vre/;
 }
 close $fh or warn qq{Could not close "$file": $!\n};
 
 $file = 'Changes';
 open $fh, '<', $file or die qq{Could not open "$file": $!\n};
 while (<$fh>) {
-    if (/^$vre/) {
-        push @{$v{$file}} => [$1,$.];
-        last;
-    }
+    push @{$v{$file}} => [$1,$.] and last if /Version $vre/;
 }
 close $fh or warn qq{Could not close "$file": $!\n};
 
