@@ -21,7 +21,7 @@ use Getopt::Long;
 use IO::Handle;
 use 5.008003;
 
-our $VERSION = '1.5.1';
+our $VERSION = '1.6.0';
 
 *STDOUT->autoflush(1);
 *STDERR->autoflush(1);
