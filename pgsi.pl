@@ -155,6 +155,7 @@ for (@fh) {
     }
 }
 
+
 sub parse_csv_log {
 
     ## Each line of interest, with PIDs as the keys
@@ -166,7 +167,7 @@ sub parse_csv_log {
     require Text::CSV_XS;
     my $csv = Text::CSV_XS->new({ binary => 1 }) or die;
     $csv->column_names(qw(log_time user_name database_name process_id connection_from session_id session_line_num command_tag session_start_time virtual_transaction_id transaction_id error_severity sql_state_code message detail hint internal_query internal_query_pos context query query_pos location application_name));
-    while(my $line = $csv->getline_hr($fh)) {
+    while (my $line = $csv->getline_hr($fh)) {
 
         if ($opt{verbose} >= 2) {
             warn "Checking line (" . Dumper($line) . ")\n";
@@ -217,8 +218,9 @@ sub parse_csv_log {
                 $first_line = $last_line = $line;
             }
 
-        } ## end LOG: statement
-    } ## End while
+        } ## end duration + statement
+
+    } ## end each line
 
     defined $first_line or die qq{Could not find any matching lines: incorrect format??\n};
 
@@ -229,7 +231,8 @@ sub parse_csv_log {
 
     ## Store the last PID seen as the last line
     $last_line = $logline{$lastpid}{line};
-} ## end of parse_pid_log
+
+} ## end of parse_csv_log
 
 
 sub parse_pid_log {
@@ -1708,10 +1711,11 @@ Contributions:
     Greg Sabino Mullane (greg@endpoint.com), End Point Corp.
     Daniel Browning (db@endpoint.com), End Point Corp.
     Joshua Tolley <josh@endpoint.com>, End Point Corp.
+    Abraham Ingersoll <abe@abe.us>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2008-2010 Mark Johnson (mark@endpoint.com)
+Copyright 2008-2011 Mark Johnson (mark@endpoint.com)
 
 This module is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. See the LICENSE file.
