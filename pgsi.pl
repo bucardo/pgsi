@@ -47,6 +47,7 @@ my %opt = (
     'mode'        => 'pid',
     'color'       => 1,
     'quiet'       => 0,
+    'interval'    => undef,
 );
 
 my $USAGE = qq{Usage: $0 -f filename [options]\n};
@@ -67,6 +68,7 @@ GetOptions ( ## no critic
         'mode=s',
         'color!',
         'quiet',
+        'interval=s',
     )
 ) or die $USAGE;
 
@@ -149,6 +151,9 @@ for (@fh) {
     }
     elsif ('csv' eq $opt{mode}) {
         parse_csv_log();
+    }
+    elsif ('bare' eq $opt{mode}) {
+        parse_bare_log();
     }
     else {
         die qq{Unknown mode: $opt{mode}\n};
@@ -355,6 +360,120 @@ sub parse_pid_log {
 
 } ## end of parse_pid_log
 
+sub parse_bare_log {
+
+    ## Parse a log file in which multi-line statements start with tabs
+
+    ## Each line of interest
+    my @logline;
+
+    my $more;
+
+    ## We only store multi-line if the previous real line was a log: statement
+    my $lastwaslog=0;
+
+    while (my $line = <$fh>) {
+
+        if ($opt{verbose} >= 2) {
+            chomp $line;
+            warn "Checking line ($line)\n";
+        }
+
+        ## There are only two possiblities we care about:
+        ## 1. tab-prefixed line (continuation of a literal)
+        ## 2. new line
+
+        if ($line =~ /^\t(.*)/) {
+            ## If the last real line was a statement, append this to last PID seen
+            if ($lastwaslog) {
+                (my $extra = $1) =~ s/^\s+//;
+                ## If a comment, treat carefully
+                $extra =~ s/^(\s*\-\-.+)/$STARTCOMMENT $1 $ENDCOMMENT /;
+                $logline[$#logline]->{statement} .= " $extra";
+            }
+            next;
+        }
+
+        ## Lines will contain "parse <.*>", "bind <.*>", "execute <.*>" or "statement", with a duration
+        if ($line =~ /^LOG: /) {
+            $more = $line;
+
+            ## Example:
+            ## 2009-12-03 08:12:05 PST 11717 4b17e355.2dc5 127.0.0.1 dbuser dbname LOG:  statement: SELECT ...
+
+            ## Reset the last log indicator
+            $lastwaslog = 0;
+
+            ## All we care about is statements/executes and durations
+            next if ($more =~ /LOG:  (?:duration: (\d+\.\d+) ms  )?(?:bind|parse) [^:]+:.*/o);
+
+            ## Got a duration? Store it for this PID and move on
+            if ($more =~ /LOG:  duration: (\d+\.\d+) ms$/o) {
+                my $duration = $1;
+                ## Store this duration, overwriting what is (presumably) -1
+                $logline[$#logline]->{duration} = $duration;
+                next;
+            }
+
+            ## Got a statement with optional duration
+            ## Handle the old statement and store the new
+            if ($more =~ /
+                            LOG:\s\s
+                            (?:duration:\s(\d+\.\d+)\sms\s\s)?
+                            ((?:(?:statement)|(?:execute\s[^:]+)))
+                            :(.*)$
+                         /x) {
+
+                my ($duration,$statement, $other) = ($1, $3, $2);
+#                print STDERR Dumper($duration, $statement, $other) if ($more =~ /today\.key/);
+
+                ## Slurp in any multi-line continuatiouns after this
+                $lastwaslog = 1;
+
+                ## resolve whatever's already in this line
+                resolve_pid_statement($logline[$#logline]) if $#logline > -1;
+                shift @logline;
+
+                ## Store and blow away any old value
+                push @logline, {
+                    statement => $statement,
+                    duration => $duration,
+                };
+
+                if (defined $duration) {
+                    $logline[$#logline]->{duration} = $duration;
+                }
+
+                ## Make sure we have a first and a last line
+                if (not defined $first_line) {
+                    $first_line = $last_line = $line;
+                }
+
+            } ## end LOG: statement
+
+            next;
+
+        } ## end if valid def line
+
+        if ($opt{verbose}) {
+            chomp $line;
+            warn "Invalid line $.: $line\n";
+        }
+
+    } ## End while
+
+    defined $first_line or die qq{Could not find any matching lines: incorrect format??\n};
+
+    ## Process any PIDS that are left
+    for my $line (@logline) {
+        resolve_pid_statement($line);
+    }
+
+    ## Store the last PID seen as the last line
+    $last_line = $logline[$#logline]->{statement};
+
+} ## end of parse_def_log
+
 
 ## Globals used by syslog: move or refactor
 my ($extract_query_re, $extract_duration_re);
@@ -513,7 +632,7 @@ for my $hsh (values %canonical_q) {
     my $mean = $hsh->{duration} /= $hsh->{count};
 
     # Average (mean) time between successive calls.
-    $hsh->{interval} = $log_int_ms / $hsh->{count};
+    $hsh->{interval} = $opt{interval} || $log_int_ms / $hsh->{count};
 
     # SI, expressed as a percent. 100 implies the query
     # was, on average, constantly running on a single
@@ -818,7 +937,7 @@ sub resolve_pid_statement {
     $resolve_called++;
 
     my $string = lc $info->{statement};
-    my $duration = $info->{duration};
+    my $duration = $info->{duration} || 0;
 
     # Handle SQL comments, carefully
     $string =~ s{/[*].*?[*]/}{}msg;
@@ -941,6 +1060,8 @@ sub log_interval {
 
 sub get_timelocal_from_line {
     my ($line) = @_;
+
+    return 0 if $opt{mode} eq 'bare';
 
     my @datetime = get_date_from_line($line);
 
@@ -1233,6 +1354,9 @@ sub log_meta {
         }
         elsif ('syslog' eq $opt{mode}) {
             $line_regex = qr{(.{19})(?:[+-]\d+:\d+|\s[A-Z]+)\s( \S+ )};
+        }
+        elsif ('bare' eq $opt{mode}) {
+            $line_regex = qr{(.{19}) [A-Z]+ \d+ [^ ]+ [^ ]+ (\w+)};
         }
         elsif ('csv' eq $opt{mode}) {
             $hostname = $line->{connection_from};
