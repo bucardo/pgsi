@@ -1618,7 +1618,7 @@ pgsi.pl - Produce system impact reports for a PostgreSQL database.
 
 =head1 VERSION
 
-This documentation refers to version 1.6.0
+This documentation refers to version 1.6.1
 
 =head1 USAGE
 

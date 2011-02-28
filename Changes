@@ -1,6 +1,11 @@
 Changes for the Postgres System Impact program pgsi.pl
 
 
+Version 1.6.1, released February 28, 2011
+
+  - Special parsing of crowded queries (x=1234AND y=2345) (Greg Sabino Mullane)
+
+
 Version 1.6.0, released January 31, 2011
 
   - Add in 'csv' as a valid mode (Abraham Ingersoll)
