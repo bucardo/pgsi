@@ -21,7 +21,7 @@ use Getopt::Long;
 use IO::Handle;
 use 5.008003;
 
-our $VERSION = '1.6.0';
+our $VERSION = '1.6.1';
 
 *STDOUT->autoflush(1);
 *STDERR->autoflush(1);
@@ -825,6 +825,9 @@ sub resolve_syslog_stmt {
     $full_statement =~ s/#011/ /g;
     $full_statement =~ s/^\s+|\s+$//g;
     $full_statement =~ s/\s+/ /g;
+
+    # Special transform for crowded queries
+    $string =~ s/=\s*(\d+)(and|or) /= $1 $2 /gio;
 
     # If closing a query, store until we get
     # subsequent duration statement
