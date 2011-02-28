@@ -827,7 +827,7 @@ sub resolve_syslog_stmt {
     $full_statement =~ s/\s+/ /g;
 
     # Special transform for crowded queries
-    $string =~ s/=\s*(\d+)(and|or) /= $1 $2 /gio;
+    $full_statement =~ s/=\s*(\d+)(and|or) /= $1 $2 /gio;
 
     # If closing a query, store until we get
     # subsequent duration statement
@@ -952,6 +952,9 @@ sub resolve_pid_statement {
     $string =~ s/#011/ /g;
     $string =~ s/^\s+|\s+$//g;
     $string =~ s/\s+/ /g;
+
+    # Special transform for crowded queries
+    $string =~ s/=\s*(\d+)(and|or) /= $1 $2 /gio;
 
     my $main_query = $string;
 
