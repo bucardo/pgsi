@@ -1,9 +1,13 @@
 Changes for the Postgres System Impact program pgsi.pl
 
 
-Version 1.6.1, released February 28, 2011
+Version 1.7.0, released February 28, 2011
 
   - Special parsing of crowded queries (x=1234AND y=2345) (Greg Sabino Mullane)
+
+  - Add "bare" mode, to handle stderr logs with no log_line_prefix (Joshua Tolley)
+    
+  - Add --interval option, for cases in which the log does not say (Joshua Tolley)
 
 
 Version 1.6.0, released January 31, 2011
