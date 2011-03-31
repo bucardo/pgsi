@@ -290,6 +290,7 @@ sub parse_pid_log {
             $lastwaslog = 0;
 
             ## All we care about is statements and durations
+            next if ($more =~ /LOG:  (?:duration: (\d+\.\d+) ms  )?(?:bind|parse) [^:]+:.*/o);
 
             ## Got a duration? Store it for this PID and move on
             if ($more =~ /LOG:  duration: (\d+\.\d+) ms$/o) {
@@ -301,9 +302,14 @@ sub parse_pid_log {
 
             ## Got a statement with optional duration
             ## Handle the old statement and store the new
-            if ($more =~ /LOG:  (?:duration: (\d+\.\d+) ms  )?statement:\s+(.+)/o) {
+            if ($more =~ /
+                            LOG:\s\s
+                            (?:duration:\s(\d+\.\d+)\sms\s\s)?
+                            ((?:(?:statement)|(?:execute\s[^:]+)))
+                            :(.*)$
+                         /x) {
 
-                my ($duration,$statement) = ($1,$2);
+                my ($duration,$isexecute,$statement) = ($1,$2,$3);
 
                 ## Slurp in any multi-line continuatiouns after this
                 $lastwaslog = 1;
