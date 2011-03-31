@@ -1006,9 +1006,9 @@ sub resolve_pid_statement {
                 duration          => 0,
                 deviation         => 0,
                 qtype             => $query_type,
-                minimum_offenders => [ [ $duration ] ],
+                minimum_offenders => [ [ -1, $duration ] ],
                 minimum_threshold => $duration,
-                maximum_offenders => [ [ $duration ] ],
+                maximum_offenders => [ [ -1, $duration ] ],
                 maximum_threshold => $duration,
                 durations         => [],
             };
@@ -1021,7 +1021,7 @@ sub resolve_pid_statement {
     # add them in if the newest one measures as one of the
     # best or worst.
     if ($opt{offenders}) {
-        my $fixme = 1;
+        my $fixme = -1;
         if ($duration > $hsh->{maximum_threshold}) {
             my $array = $hsh->{maximum_offenders};
             @$array = (
@@ -1473,9 +1473,12 @@ sub process_all_queries {
     <td align="left"><ol>%s</ol></td>
   </tr>
 </table>},
-                     map { join '', map { "<li>$_->[0] -- $_->[1] ms</li>" } @$_ } @$hsh{
-                         qw( minimum_offenders maximum_offenders )
-                 }
+                    map { join '', map { 
+                        if ($_->[0] == -1) { "<li>$_->[1] ms</li>" }
+                        else { "<li>$_->[0] -- $_->[1] ms</li>" }
+                    } @$_ } @$hsh{
+                        qw( minimum_offenders maximum_offenders )
+                    }
              );
             }
 
