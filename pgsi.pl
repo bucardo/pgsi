@@ -77,6 +77,12 @@ if ($opt{version}) {
     exit 0;
 }
 
+if ($opt{help}) {
+    print $USAGE;
+    print "Full documentation at: http://bucardo.org/wiki/pgsi\n";
+    exit 0;
+}
+
 ## Prepare formatting vars based on opt{format}
 ## The default is 'html':
 my $fmstartbold = q{<b>};
