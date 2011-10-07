@@ -1,5 +1,9 @@
 Changes for the Postgres System Impact program pgsi.pl
 
+Version ??
+
+  - Add "--help" output (Greg Sabino Mullane)
+
 
 Version 1.7.0, released February 28, 2011
 

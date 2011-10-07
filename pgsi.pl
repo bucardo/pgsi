@@ -21,7 +21,7 @@ use Getopt::Long;
 use IO::Handle;
 use 5.008003;
 
-our $VERSION = '1.7.0';
+our $VERSION = '1.7.1';
 
 *STDOUT->autoflush(1);
 *STDERR->autoflush(1);
@@ -1636,7 +1636,7 @@ pgsi.pl - Produce system impact reports for a PostgreSQL database.
 
 =head1 VERSION
 
-This documentation refers to version 1.7.0
+This documentation refers to version 1.7.1
 
 =head1 USAGE
 
