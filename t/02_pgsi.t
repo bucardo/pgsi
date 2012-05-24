@@ -126,17 +126,17 @@ $info = qx{perl pgsi.pl --file $testlog};
 
 ## Got the standard header?
 $t=q{pgsi returned the expected header when run};
-like ($info, qr{Query_System_Impact}, $t);
+like ($info, qr{Query System Impact}, $t);
 
 ## Got the proper count?
 $t=q{pgsi returned the expected count};
 like ($info, qr{^\Q3<br />}ms, $t);
 
 $t=q{pgsi returned the expected query};
-like ($info, qr{^ SELECT \?$}ms, $t);
+like ($info, qr{^ SELECT</span> \?$}ms, $t);
 
 $t=q{pgsi returned the expected query};
-like ($info, qr{^ SELECT pg_client_encoding\(\)}ms, $t);
+like ($info, qr{SELECT</span> pg_client_encoding\(\)}ms, $t);
 
 $t=q{pgsi returned an average duration line};
 if ($info =~ qr{^(\d+)\.\d+ ms<br />}ms) {
