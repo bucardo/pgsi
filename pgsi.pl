@@ -670,7 +670,13 @@ for my $hsh (values %canonical_q) {
         }
         $hsh->{deviation} = sqrt($sum / ($hsh->{count} - 1));
         my @sorted = sort { $a <=> $b } @{$hsh->{durations}};
-        $hsh->{median} = $sorted[int($#sorted / 2)];
+        #$hsh->{median} = $sorted[int($#sorted / 2)];
+        if (($#sorted + 1) % 2 != 0) {
+            $hsh->{median} = $sorted[int($#sorted / 2)];
+        }
+        else {
+            $hsh->{median} = ($sorted[int($#sorted / 2)] + $sorted[int($#sorted / 2) + 1]) / 2;
+        }
     }
     else {
         $hsh->{deviation} = -1;

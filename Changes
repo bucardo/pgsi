@@ -4,6 +4,8 @@ Version ??
 
   - Add "--help" output (Greg Sabino Mullane)
 
+  - Better logic for median values (razvan-panda @ github)
+
 
 Version 1.7.0, released February 28, 2011
 
