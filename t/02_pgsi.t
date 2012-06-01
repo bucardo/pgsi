@@ -133,7 +133,7 @@ $t=q{pgsi returned the expected count};
 like ($info, qr{^\Q3<br />}ms, $t);
 
 $t=q{pgsi returned the expected query};
-like ($info, qr{^ SELECT</span> \?$}ms, $t);
+like ($info, qr{SELECT</span>.+\?}ms, $t);
 
 $t=q{pgsi returned the expected query};
 like ($info, qr{SELECT</span> pg_client_encoding\(\)}ms, $t);
