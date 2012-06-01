@@ -437,7 +437,6 @@ sub parse_bare_log {
                          /x) {
 
                 my ($duration,$statement, $other) = ($1, $3, $2);
-#                print STDERR Dumper($duration, $statement, $other) if ($more =~ /today\.key/);
 
                 ## Slurp in any multi-line continuatiouns after this
                 $lastwaslog = 1;
@@ -483,6 +482,8 @@ sub parse_bare_log {
 
     ## Store the last PID seen as the last line
     $last_line = $logline[$#logline]->{statement};
+
+    return;
 
 } ## end of parse_def_log
 
@@ -670,7 +671,6 @@ for my $hsh (values %canonical_q) {
         }
         $hsh->{deviation} = sqrt($sum / ($hsh->{count} - 1));
         my @sorted = sort { $a <=> $b } @{$hsh->{durations}};
-        #$hsh->{median} = $sorted[int($#sorted / 2)];
         if (($#sorted + 1) % 2 != 0) {
             $hsh->{median} = $sorted[int($#sorted / 2)];
         }
@@ -1491,7 +1491,7 @@ sub process_all_queries {
     <td align="left"><ol>%s</ol></td>
   </tr>
 </table>},
-                    map { join '', map { 
+                    map { join '', map {
                         if ($_->[0] == -1) { "<li>$_->[1] ms</li>" }
                         else { "<li>$_->[0] -- $_->[1] ms</li>" }
                     } @$_ } @$hsh{

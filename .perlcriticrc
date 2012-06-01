@@ -17,7 +17,10 @@ severity = 1
 [-CodeLayout::ProhibitParensWithBuiltins]
 [-CodeLayout::ProhibitQuotedWordLists]
 [-CodeLayout::RequireTidyCode]
+[-CodeLayout::RequireTrailingCommaAtNewline]
 [-CodeLayout::RequireUseUTF8]
+
+[-Compatibility::ProhibitUnixDevNull]
 
 [-ControlStructures::ProhibitCascadingIfElse]
 [-ControlStructures::ProhibitCStyleForLoops]
@@ -61,9 +64,10 @@ severity = 1
 [-RegularExpressions::ProhibitComplexRegexes]
 [-RegularExpressions::ProhibitEnumeratedClasses]
 [-RegularExpressions::ProhibitEscapedMetacharacters]
+[-RegularExpressions::RequireBracesForMultiline]
+[-RegularExpressions::RequireDotMatchAnything]
 [-RegularExpressions::RequireExtendedFormatting]
 [-RegularExpressions::RequireLineBoundaryMatching]
-[-RegularExpressions::RequireDotMatchAnything]
 
 [-Subroutines::ProhibitQualifiedSubDeclarations]
 [-Subroutines::RequireArgUnpacking]
@@ -80,12 +84,15 @@ severity = 1
 [-ValuesAndExpressions::ProhibitNoisyQuotes]
 [-ValuesAndExpressions::ProhibitVersionStrings]
 [-ValuesAndExpressions::RequireNumberSeparators]
+[-ValuesAndExpressions::RequireNumericVersion]
 [-ValuesAndExpressions::RestrictLongStrings]
 
 [-Variables::ProhibitLocalVars]
 [-Variables::ProhibitPackageVars]
 [-Variables::ProhibitPunctuationVars]
 [-Variables::RequireLocalizedPunctuationVars]
+[-Variables::RequireNegativeIndices]
+
 
 [-Modules::RequireVersionVar]
 

@@ -131,12 +131,15 @@ __DATA__
 
 Backcountry
 backend
+cardinality
 conf
 cperl
 cwd
+durations
 env
 http
 logfile
+Mullane
 namespace
 ol
 params
@@ -149,8 +152,10 @@ postgresql
 PostgreSQL
 regex
 Regex
+Sabino
 SELECTs
 Spellcheck
+SQL
 stdin
 stdout
 textfiles
@@ -179,6 +184,12 @@ bucardo
 
 ## Changes
 
+colorings
 CSS
+durations
 filename
+github
+razvan
 regexes
+stderr
+
