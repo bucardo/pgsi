@@ -26,7 +26,7 @@ eval {
 };
 SKIP: {
     if ($@ or $Test::Pod::VERSION < $PODVERSION) {
-        skip ("Test::Pod $PODVERSION is required", 2);
+        skip ("Test::Pod $PODVERSION is required", 1);
     }
     pod_file_ok ('pgsi.pl');
 }

@@ -11,3 +11,6 @@ log$
 ^RCS
 ^blib
 pgsi.html
+.*\.tmp
+MYMETA.*
+test.*

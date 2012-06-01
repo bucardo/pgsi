@@ -1,5 +1,5 @@
 This file contains message digests of all files listed in MANIFEST,
-signed via the Module::Signature module, version 0.55.
+signed via the Module::Signature module, version 0.68.
 
 To verify the content in this distribution, first make sure you have
 Module::Signature installed, then type:
@@ -14,29 +14,29 @@ not run its Makefile.PL or Build.PL.
 -----BEGIN PGP SIGNED MESSAGE-----
 Hash: RIPEMD160
 
-SHA1 f4b30f9c9e5ff832dd6b49030f08736314f96038 .gitignore
-SHA1 e5db663bf4ae8c5627d535cced3e60938acc7557 .perlcriticrc
-SHA1 819b943497b26269257f01f5ee955a4393718fac Changes
+SHA1 1a95fb0825122ba03a0e923c21befa4005e565eb .gitignore
+SHA1 f4c9d744f9805c07f67df245eacfbd7cc6b4e800 .perlcriticrc
+SHA1 f58ac79d456f565b7eff4b5e2ac08331ecbe8488 Changes
 SHA1 6b8822e6cafae62bafddc2b2466b51f5433b495e INSTALL
 SHA1 4e7d5e6453a4a552a1a670e0c5b8b96d2d043cfe LICENSE
 SHA1 e9d7f4e3e957eeee05020eb4379a7b8b2f17d797 MANIFEST
-SHA1 376aeadaf110f36d603df85fa294da1539f8750a MANIFEST.SKIP
-SHA1 af20db9b61c4ca31c897d4777a390177e68850f2 META.yml
-SHA1 3fa7f14a31e26727fab18655e8df6d746a0d37ba Makefile.PL
-SHA1 86cdd94a6044c9114e46df7342a1554e8c5622e3 README
-SHA1 78a446795b573c941c0731df7528b2bdc8e9ce66 pgsi.pl
+SHA1 17e2f87d23167cf4cd34d43c393130e3396e8c5c MANIFEST.SKIP
+SHA1 f739b8faa3f8ed43f62573762fcd359579b42b10 META.yml
+SHA1 d6382baa4f40cac14856742532574d9f6c3aa918 Makefile.PL
+SHA1 d0d3bd82ef735575210c260d64810c2a5402bd39 README
+SHA1 1cd2974d1d658d84ff243a6c8a3bd9f2716dc496 pgsi.pl
 SHA1 7933b5aa8cc486885ff70b8d31349d8cde05929c t/00_basic.t
 SHA1 dc7459ce2f73becd40d7a624ac71c7554efce458 t/00_release.t
 SHA1 0ba35bd2edbabe1ab191cd006721f96998f2c732 t/00_signature.t
-SHA1 bb386949601b6a763e4de67bc04381ad24787ed5 t/02_pgsi.t
+SHA1 445dcb8fc226c7cece83aedbceb29ef7f17de2d9 t/02_pgsi.t
 SHA1 041a8261061e52e37be5ff77fed1b9a799cd5400 t/99_cleanup.t
 SHA1 f5a4e98989a41cdfc7f292f174d14849b3b3f8f8 t/99_perlcritic.t
-SHA1 46b592bb16e57fa7d6dacf73ad9c662723af2e47 t/99_pod.t
-SHA1 74c6c68e98dcc89604b31dc5c99a7af0b437867e t/99_spellcheck.t
+SHA1 58dfe7e3b035ebe0e8f36a236c4c169190ee1295 t/99_pod.t
+SHA1 24cda361ace47b0c6fa1def503783fcd6bf3be0a t/99_spellcheck.t
 SHA1 9f1900d5a79447a5b594f721b6c52cf0b30b59b4 t/99_yaml.t
 -----BEGIN PGP SIGNATURE-----
 
-iEYEAREDAAYFAk1sEHAACgkQvJuQZxSWSsijSgCgzXicx2+SaOlq+EdppwW6DJKX
-BD4AoKW63ZZPq7nszLF9uDYtnZSWbCyL
-=eDKj
+iEYEAREDAAYFAk/I5uQACgkQvJuQZxSWSshs2wCdHbOZHBekQsGjKGpOKWCgwZjg
+ke8AoI0AkdKT6Il9vGAycN/1SHrv6ZP0
+=lU2x
 -----END PGP SIGNATURE-----
