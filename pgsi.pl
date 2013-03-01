@@ -882,6 +882,13 @@ sub resolve_syslog_stmt {
             }
             { in (?+)}xmsg;
 
+        # Remove remaining comments (instances of '--' that didn't indicate
+        # comments should have been removed already)
+        $main_query =~ s/--[^\n]+$//gm;
+        
+        # Remove blank lines
+        $main_query =~ s/^\s*\n//gm;
+
         # Store in temporary statement hashkey,
         # along with UPPER type
         $query{$pid}{statement} = $main_query;
@@ -957,7 +964,7 @@ sub resolve_pid_statement {
 
     $resolve_called++;
 
-    my $string = lc $info->{statement};
+    my $string = $info->{statement} ? lc $info->{statement} : '';
     my $duration = $info->{duration} || 0;
 
     # Handle SQL comments, carefully
@@ -1005,6 +1012,13 @@ sub resolve_pid_statement {
             { in (?+)}xmsg;
 
     $main_query =~ s/^begin;//io unless $main_query =~ m{^begin;$}; ## no critic
+
+    # Remove remaining comments (instances of '--' that didn't indicate
+    # comments should have been removed already)
+    $main_query =~ s/--[^\n]+$//gm;
+    
+    # Remove blank lines
+    $main_query =~ s/^\s*\n//gm;
 
     return 0 if $main_query !~ /\w/; ## e.g. a single ;
 
