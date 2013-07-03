@@ -759,6 +759,8 @@ elsif ($opt{format} eq 'tsv') {
                     maximum_threshold durations );
     print "\n";
 
+    no warnings 'uninitialized';
+
     while (my ($q,$v) = each %canonical_q) {
         print join "\t" => $v->{qtype}, $q,
             @{$v}{qw/count duration interval deviation sysimpact minimum_threshold maximum_threshold/},
