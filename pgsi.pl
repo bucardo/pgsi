@@ -110,6 +110,20 @@ if ($opt{format} eq 'mediawiki') {
     $fmendquery     = '';
 }
 
+if ($opt{format} eq 'tsv') {
+    $fmstartbold    = q{};
+    $fmendbold      = q{};
+    $fmstartheader1 = q{};
+    $fmendheader1   = q{};
+    $fmstartheader2 = q{};
+    $fmendheader2   = q{};
+    $fmstartheader3 = q{};
+    $fmendheader3   = q{};
+    $fmsep          = q{};
+    $fmstartquery   = '';
+    $fmendquery     = '';
+}
+
 my $minwrap1 = 80;
 my $minwrap2 = 40; ## WHEN .. THEN
 
@@ -738,6 +752,21 @@ span.prequestion { color: red;    font-weight: normal                           
         print qq{<li><a href="#$safename">$qtype</a> ($count)</li>\n};
     }
     print "</ul>\n";
+}
+elsif ($opt{format} eq 'tsv') {
+    # print out the field headers
+    print join "\t" => qw( qtype query count duration interval deviation sysimpact minimum_threshold
+                    maximum_threshold durations );
+    print "\n";
+
+    while (my ($q,$v) = each %canonical_q) {
+        print join "\t" => $v->{qtype}, $q,
+            @{$v}{qw/count duration interval deviation sysimpact minimum_threshold maximum_threshold/},
+            (join q{,} => @{$v->{durations}}),
+        ;
+        print "\n";
+    }
+    exit;
 }
 
 for my $qtype (
@@ -1671,6 +1700,7 @@ pgsi.pl --file pglog_slice.log [options]
 
 =item Options
 
+ --format
  --file
  --query-types
  --top-10
@@ -1765,6 +1795,19 @@ log_line_prefix  = '%t %h postgres[%p]: [%l-1] ' ## Simulate syslog for pgsi.
 =head2 Options
 
 =over 4
+
+=item --format
+
+Output format for the resulting data.
+
+    pgsi.pl --format=tsv
+
+Valid values here are "html" (default), "mediawiki", and "tsv", each of which
+will generate the report in the corresponding format.
+
+The "tsv" format (tab-separated value) will not generate a full report, but will
+dump the normalized queries only along with the specific metrics into a tab-
+separated file.
 
 =item --query-types
 
